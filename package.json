@@ -20,7 +20,13 @@
     "start": "node ./src/server.js"
   },
   "devDependencies": {
+    "@types/body-parser": "^1.19.0",
+    "@types/cors": "^2.8.6",
     "@types/express": "^4.17.7",
+    "@types/helmet": "^0.0.47",
+    "@types/mongodb": "^3.5.25",
+    "@types/mongoose": "^5.7.30",
+    "@types/morgan": "^1.9.1",
     "@types/node": "^14.0.20",
     "jshint": "^2.11.1",
     "typescript": "^3.9.6"
