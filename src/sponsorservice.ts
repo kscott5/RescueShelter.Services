@@ -82,9 +82,9 @@ export namespace SponsorService {
 
         app.get("/api/sponsors", (req,res) => {
             console.debug(`GET: ${req.url}`);
-            var page = Number.parseInt(req.query.page || 1); 
-            var limit = Number.parseInt(req.query.limit || 5);
-            var phrase = req.query.phrase || null;
+            var page = Number.parseInt(req.query.page as any || 1); 
+            var limit = Number.parseInt(req.query.limit as any || 5);
+            var phrase = req.query.phrase as any || null;
 
             res.status(200);
             Promise.resolve(db.getSponsors(page,limit,phrase))
