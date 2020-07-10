@@ -163,9 +163,9 @@ export namespace AnimalService {
          */
         app.get("/api/animals/", function(req,res){
             console.debug(`GET: ${req.url}`);
-            let page = req.query.page; 
-            let limit = Number.parseInt(req.query.limit || 5);
-            let phrase = req.query.phrase || '';
+            var page = Number.parseInt(req.query["page"] as any || 1); 
+            var limit = Number.parseInt(req.query["limit"] as any || 5);
+            var phrase = req.query["phrase"] as string || '';
 
             res.status(200);
             
