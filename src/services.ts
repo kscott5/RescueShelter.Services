@@ -1,5 +1,4 @@
 import * as mongoose from "mongoose";
-import { Number } from "prop-types";
 
 console.log(`mongoosejs version: ${mongoose.version}`);
 
