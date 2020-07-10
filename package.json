@@ -15,9 +15,10 @@
     "path": "^0.12.7"
   },
   "scripts": {
-    "clean": "find ./src -name *.js -delete",
-    "compile": "tsc -p tsconfig.json",
-    "start": "node ./src/server.js"
+    "clean": "rm -r -f ./dist",
+    "compile": "yarn run clean & tsc -p tsconfig.json",
+    "watch": "yarn run clean & tsc -p tsconfig.json --watch",
+    "start": "node ./dist/server.js"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.0",
