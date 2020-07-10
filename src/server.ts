@@ -1,9 +1,10 @@
 "use strict";
 
-import * as express from "express";
+import express = require("express");
+import cors = require("cors")
+
+import morgan from "morgan";
 import * as helmet from "helmet";
-import * as cors from "cors";
-import * as morgan from "morgan";
 import * as path from "path";
 
 import {AriaService} from "./ariaservice";
@@ -15,7 +16,7 @@ enum LoggerType {
     Development, Staging, Production
 };
 
-let apiServer = express();
+let apiServer = express()
 
 declare let __dirname; // variable initialize by NodeJS Path Module
 
