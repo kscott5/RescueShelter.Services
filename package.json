@@ -17,7 +17,7 @@
   "scripts": {
     "clean": "find ./src -name *.js -delete",
     "compile": "tsc -p tsconfig.json",
-    "start": ""
+    "start": "node ./src/server.js"
   },
   "devDependencies": {
     "@types/express": "^4.17.7",
