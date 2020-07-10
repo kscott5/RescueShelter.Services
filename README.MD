@@ -1,4 +1,18 @@
-# [MongoDB](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/index.html) & [Robo3t](https://www.robomongo.org/)
+# Rescue Shelter Services
+Simple express server that expose web api for Rescue Shelter [readme](https://github.com/kscott5/RescueShelter/blob/master/README.MD)
+```
+yarn run watch
+```
+
+```
+yarn run start
+```
+
+The server should start on localhost port 3302.
+[http://localhost:3302/api/animals](http://localhost:3302/api/animals)  
+
+
+## [MongoDB](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/index.html) & [Robo3t](https://www.robomongo.org/)
 Join collections with MongoDB aggregate function  
   
 > user defined variables  
