@@ -1,4 +1,6 @@
-import * as mongoose from "mongoose";
+import { Mongoose, Schema, Model, Document } from "mongoose";
+
+let mongoose = new Mongoose()
 
 console.log(`mongoosejs version: ${mongoose.version}`);
 
@@ -6,7 +8,7 @@ mongoose.set('debug', true);
 mongoose.set('useFindAndModify', false);
 
 const __connectionString = 'mongodb://localhost:27017/rescueshelter';
-const __connection = mongoose.createConnection(__connectionString, { useNewUrlParser: true } );
+const __connection = mongoose.createConnection(__connectionString, { useNewUrlParser: true , useUnifiedTopology: true } );
 
 export const SECURITY_MODEL_NAME = "token";
 createMongooseModel(SECURITY_MODEL_NAME, 
@@ -100,8 +102,8 @@ export function createMongooseSchema(schemaDefinition: any, strictMode: boolean 
     return new mongoose.Schema(schemaDefinition, {strict: strictMode});
 }
 
-export function createMongooseModel(modelName: string, modelSchema: mongoose.Schema<any> | Function) 
-: mongoose.Model<mongoose.Document> {
+export function createMongooseModel(modelName: string, modelSchema: Schema<any> | Function) 
+: Model<Document> {
     if(__connection.models[modelName] !== undefined)
         return __connection.models[modelName];
 
@@ -110,7 +112,7 @@ export function createMongooseModel(modelName: string, modelSchema: mongoose.Sch
     return __connection.model(modelName, schema);    
 }
 
-export function getModel(modelName: string) : mongoose.Model<mongoose.Document> {    
+export function getModel(modelName: string) : Model<Document> {    
     if(__connection.models[modelName] !== undefined)
         return __connection.models[modelName];
 
