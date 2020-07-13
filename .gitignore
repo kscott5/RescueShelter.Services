@@ -22,6 +22,8 @@
 /data
 package-lock.json
 /dist
+/.vscode/**/*
+
 
 *.log
 *.pid
