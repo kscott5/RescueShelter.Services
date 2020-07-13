@@ -37,7 +37,7 @@ createMongooseModel(SPONSOR_MODEL_NAME, ()=>{
         answer: {type: String, required: true},
     });
 
-    var securityShema = createMongooseSchema({        
+    var securitySchema = createMongooseSchema({        
         _id: false,
         password: {type: String, required: true},
         questions: [question]
@@ -49,7 +49,7 @@ createMongooseModel(SPONSOR_MODEL_NAME, ()=>{
         lastname: {type: String},
         useremail: {type: String, required: [true, '*'], unique: true},
         username: {type: String, unique: true},
-        security: {type: securityShema},
+        security: {type: securitySchema},
         photo: {type: String},
         audit: [
             {
@@ -64,7 +64,7 @@ createMongooseModel(SPONSOR_MODEL_NAME, ()=>{
     schema.path("audit").default(function(){
         return {
             modified: Date.now(),
-            Sponsor_id: this._id,
+            sponsor_id: this._id,
         };
     });    
     //schema.path("audit.sponssor_id").default(function(){return Date.now();});
