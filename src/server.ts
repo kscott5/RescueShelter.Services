@@ -63,10 +63,10 @@ export class Server {
             res.sendFile("apis.html");
         });
 
-        AriaService.publishWebAPI(apiServer);
-        AnimalService.publishWebAPI(apiServer);
-        SponsorService.publishWebAPI(apiServer);
-        SecurityService.publishWebAPI(apiServer);
+        new AriaService().publishWebAPI(apiServer);
+        new AnimalService().publishWebAPI(apiServer);
+        new SponsorService().publishWebAPI(apiServer);
+        new SecurityService().publishWebAPI(apiServer);
         
         apiServer.listen(port,function(){
             console.log('Rescue Shelter listening on port: '+ port);

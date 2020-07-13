@@ -13,16 +13,19 @@ import * as services from "./services";
  * 
  */
 
-export namespace AriaService {
-    services.createMongooseModel("aria", 
-        services.createMongooseSchema({
-            lang: {type: String, required: true},
-            route: {type: String, required: true},
-            labels: {type: Object, required: true}
-        })
-    );
 
-    export function publishWebAPI(app: Application) {
+services.createMongooseModel("aria", 
+    services.createMongooseSchema({
+        lang: {type: String, required: true},
+        route: {type: String, required: true},
+        labels: {type: Object, required: true}
+    })
+);
+
+export class AriaService {
+    constructor(){}
+
+    publishWebAPI(app: Application) : void {
         let jsonParser = bodyParser.json();
         let jsonResponse = new services.JsonResponse();
 

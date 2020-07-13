@@ -2,47 +2,50 @@ import {Application, json} from "express";
 import * as bodyParser from "body-parser";
 import * as services from "./services";
 
-export namespace SponsorService {
-    class SponsorDb {
-        private __selectionFields;
-        private model;
 
-        constructor() {
-            this.__selectionFields =  "_id useremail username firstname lastname photo audit";
-            this.model = services.getModel(services.SPONSOR_MODEL_NAME);
-        }
+class SponsorDb {
+    private __selectionFields;
+    private model;
 
-        newSponsor(item: any) : Promise<any> {
-            var sponsor = new this.model(item);
+    constructor() {
+        this.__selectionFields =  "_id useremail username firstname lastname photo audit";
+        this.model = services.getModel(services.SPONSOR_MODEL_NAME);
+    }
 
-            return sponsor.save();
-        }
+    newSponsor(item: any) : Promise<any> {
+        var sponsor = new this.model(item);
 
-        saveSponsor(item: any) : Promise<any>  {
-            var sponsor = new this.model(item);
-            
-            sponsor["audit"].push({modified: new Date(), sponsor_id: sponsor._id});
+        return sponsor.save();
+    }
 
-            var options = services.createFindOneAndUpdateOptions();
-            
-            return this.model.findOneAndUpdate({_id: sponsor._id}, sponsor, options);
-        }
+    saveSponsor(item: any) : Promise<any>  {
+        var sponsor = new this.model(item);
+        
+        sponsor["audit"].push({modified: new Date(), sponsor_id: sponsor._id});
 
-        getSponsor(id: String) : Promise<any>  {
-            return this.model.findById(id);
-        }
+        var options = services.createFindOneAndUpdateOptions();
+        
+        return this.model.findOneAndUpdate({_id: sponsor._id}, sponsor, options);
+    }
 
-        getSponsors(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
-            var condition = (phrase)? {$text: {$search: phrase}}: {};
-            
-            return this.model.find(condition)
-                .lean()
-                .limit(limit)
-                .select(this.__selectionFields);
-        } 
-    } //end SponsorDb class
+    getSponsor(id: String) : Promise<any>  {
+        return this.model.findById(id);
+    }
 
-    export function publishWebAPI(app: Application) {
+    getSponsors(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
+        var condition = (phrase)? {$text: {$search: phrase}}: {};
+        
+        return this.model.find(condition)
+            .lean()
+            .limit(limit)
+            .select(this.__selectionFields);
+    } 
+} //end SponsorDb class
+
+export class SponsorService {
+    constructor(){}
+
+    publishWebAPI(app: Application) : void {
         let jsonBodyParser = bodyParser.json({type: 'application/json'});
         let jsonResponse = new services.JsonResponse();
 
@@ -92,4 +95,4 @@ export namespace SponsorService {
                 .catch(error => res.json(jsonResponse.createError(error)));
         });
     } // end publishWebAPI
-} // end SponsorService namespace
+} // end SponsorService
