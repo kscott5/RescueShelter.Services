@@ -29,7 +29,7 @@ createMongooseModel(TRACK_MODEL_NAME, () => {
 });
 
 export const SPONSOR_MODEL_NAME = "sponsor";
-createMongooseModel("sponsor", ()=>{
+createMongooseModel(SPONSOR_MODEL_NAME, ()=>{
     
     var question = createMongooseSchema({
         _id: false,
@@ -148,29 +148,29 @@ export class Pagination {
         this.pageIndex = pageCurrent;
         this.documents = data;
     }
-}
+} // end Pagination
 
-    export class JsonResponse {
-        constructor(){}
+export class JsonResponse {
+    constructor(){}
 
-        createError(error: any) : any {
-            return {
-                ok: true,
-                data: error,
-            }
+    createError(error: any) : any {
+        return {
+            ok: true,
+            data: error,
         }
+    }
 
-        createData(data: any) : any {
-            return {
-                ok: true,
-                data: data,
-            }
+    createData(data: any) : any {
+        return {
+            ok: true,
+            data: data,
         }
+    }
 
-        createPagination(data: any, pageCount: Number = 1, pageCurrent: Number = 1) : any {
-            return {
-                ok: true,
-                data: new Pagination(data,pageCount, pageCurrent)
-            }
-    } // end JsonResponse
-} // end Services namespace
+    createPagination(data: any, pageCount: Number = 1, pageCurrent: Number = 1) : any {
+        return {
+            ok: true,
+            data: new Pagination(data,pageCount, pageCurrent)
+        }
+    }
+} // end JsonResponse
