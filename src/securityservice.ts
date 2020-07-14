@@ -275,7 +275,7 @@ export class SecurityService {
         let db = new SecurityDb();
         let generate = new Generate();
         
-        app.post("/api/secure/unique/sponsor", jsonBodyParser, (req,res) => {
+        app.post("/api/secure/unique/sponsor", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -285,12 +285,15 @@ export class SecurityService {
                 res.json(jsonResponse.createError("HttpPOST body not available with request"));
             }
 
-            Promise.resolve(db.verifyAccess({accessType: field, field: value}))
-                .then(data => res.json(jsonResponse.createData(data)))
-                .catch(error => res.json(jsonResponse.createError(error)));
+            try {
+                var data = await db.verifyAccess({accessType: field, field: value});
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         });
 
-        app.post("/api/secure/data", jsonBodyParser, (req,res) => {
+        app.post("/api/secure/data", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -304,7 +307,7 @@ export class SecurityService {
             res.json(jsonResponse.createData(generate.encryptedData(data,secret)));
         });
 
-        app.post("/api/secure/verify", jsonBodyParser, (req,res) => {
+        app.post("/api/secure/verify", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -312,15 +315,18 @@ export class SecurityService {
             var useremail = req.body.useremail;
 
             if(!hashid || !useremail) {
-                res.json(jsonResponse.createError("HttpPOST body not availe with request"));
+                res.json(jsonResponse.createError("HttpPOST body not available with request"));
             }
 
-            Promise.resolve(db.verifyAccess({accessType: 'hashid', hashid: hashid, useremail: useremail}))
-                .then(data => res.json(jsonResponse.createData(data)))
-                .catch(error => res.json(jsonResponse.createError(error)));            
+            try {
+                var data = db.verifyAccess({accessType: 'hashid', hashid: hashid, useremail: useremail});
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         }); // end /api/secure/verify
 
-        app.post("/api/secure/deauth", jsonBodyParser, (req,res) => {
+        app.post("/api/secure/deauth", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -331,15 +337,18 @@ export class SecurityService {
                 res.json(jsonResponse.createError("HttpPOST body is not available."));
             }
 
-            Promise.resolve(db.deauthenticate(hashid, useremail))
-                .then(data => res.json(jsonResponse.createData(data)))
-                .catch(error => res.json(jsonResponse.createError(error)));
+            try {
+            var data = await db.deauthenticate(hashid, useremail);
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         });
 
         /**
          * Authenticate the sponsor and generate app access hash id
          */
-        app.post("/api/secure/auth", jsonBodyParser, (req,res) => {
+        app.post("/api/secure/auth", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -350,15 +359,18 @@ export class SecurityService {
                 res.json(jsonResponse.createError("HttpPOST: request body not available"));
             }
 
-            Promise.resolve(db.authenticate(useremail, password))
-                .then(data => res.json(jsonResponse.createData(data)))
-                .catch(error => res.json(jsonResponse.createError(error)));
+            try {
+                var data = await db.authenticate(useremail, password);
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            };
         });
 
         /**
          * Registers then authenticate new sponsor
          */
-        app.post("/api/secure/registration", jsonBodyParser, (req,res) => {
+        app.post("/api/secure/registration", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             if(!req.body) {
                 res.status(200);
@@ -376,14 +388,17 @@ export class SecurityService {
             // create the new sponsor with security
             res.status(200);
 
-            var model = services.getModel(services.SPONSOR_MODEL_NAME);
-            var sponsor = new model(item);
+            try {            
+                var model = services.getModel(services.SPONSOR_MODEL_NAME);
+                var sponsor = new model(item);
+                
+                await sponsor.save();
 
-            var authPromise = Promise.resolve(db.authenticate(useremail, password));
-            Promise.resolve(sponsor.save())
-                .then(doc => authPromise)
-                .then(auth => res.json(jsonResponse.createData(auth)))
-                .catch(error => res.json(jsonResponse.createError(error)));
+                var auth = await db.authenticate(useremail, password);
+                res.json(jsonResponse.createData(auth))            
+            } catch(error) {
+                res.json(jsonResponse.createError(error))
+            }
         }); // end /api/secure/registration
     } // end publishWebAPI
 } // end SecurityService
