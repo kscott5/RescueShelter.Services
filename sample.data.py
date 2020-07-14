@@ -16,6 +16,7 @@ def loadSponsorTestData() :
     client = pymongo.MongoClient("localhost", 27017)
     db = client.get_database("rescueshelter")
 
+    db.drop_collection("sponsors")
     col = db.get_collection("sponsors")
     col.insert_many([
         {
@@ -39,7 +40,7 @@ def loadSponsorTestData() :
     # 
     col.update_many(
         {},
-        { '$set': { '$concat': ['$firstname', '.', '$lastname', '@rescueshelter.co']}}
+        [ {'$set': {'useremail': { '$concat': ['$firstname', '.', '$lastname', '@rescueshelter.co']}}}]
     )
     
     client.close()
@@ -65,6 +66,7 @@ def loadAnimalTestData() :
     client = pymongo.MongoClient("localhost", 27017)
     db = client.get_database("rescueshelter")
 
+    db.drop_collection("animals")
     col = db.get_collection("animals")
     col.insert_many([
         {
