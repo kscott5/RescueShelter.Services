@@ -29,11 +29,11 @@ export class AriaService {
         let jsonParser = bodyParser.json();
         let jsonResponse = new services.JsonResponse();
 
-        app.get("/api/aria/:lang", jsonParser, (req,res)=>{
+        app.get("/api/aria/:lang", jsonParser, async (req,res) => {
             res.status(200);
 
             const lang = req.params.lang;
-            res.json(jsonResponse.createError("Not impplemented yet"));
+            res.json(jsonResponse.createError("Not implemented yet"));
         });
     } // end publishWebAPI
 } // end AriaService
