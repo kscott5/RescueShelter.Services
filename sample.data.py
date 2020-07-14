@@ -9,9 +9,40 @@ wordSize = random.randint(word_size_min, word_size_max)
 
 word_generator = random.sample #Saves the sample([],k=0) function for use later
 wordTemplate =  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-    
+
 def loadSponsorTestData() :
-    print('Load Sponsor Test not implemented yet')
+    print('Loading sponsor sample data')
+
+    client = pymongo.MongoClient("localhost", 27017)
+    db = client.get_database("rescueshelter")
+
+    col = db.get_collection("sponsors")
+    col.insert_many([
+        {
+            '_id': str(uuid.uuid4()),
+            'firstname': ''.join(word_generator(wordTemplate,wordSize)),
+            'lastname': ''.join(word_generator(wordTemplate,wordSize)),
+            'useremail': '',
+            'photo': '',
+            'security': {},
+            'audit': []
+        } for i in range(10)])
+
+    # https://stackoverflow.com/questions/3974985/update-mongodb-field-using-value-of-another-field
+    # https://stackoverflow.com/questions/29554521/uninstall-mongodb-from-ubuntu
+    # https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
+    # ubuntu 18 install instruction step 2: change from 
+    #
+    # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+    #
+    # deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.2 multiverse
+    # 
+    col.update_many(
+        {},
+        { '$set': { '$concat': ['$firstname', '.', '$lastname', '@rescueshelter.co']}}
+    )
+    
+    client.close()
 
 def loadAnimalTestData() :
     print('Loading sample animal data')
