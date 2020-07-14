@@ -62,7 +62,7 @@ class Generate {
         const tmpData = data.trim();
         const tmpSalt = salt.trim();
 
-        const encryptedData = crypto.pbkdf2Sync(tmpData, tmpSalt, 100, 50, 'sha256');
+        const encryptedData = crypto.pbkdf2Sync(tmpData, tmpSalt, 1000, 50, 'sha256');
         const hexEncryptedData = encryptedData.toString('hex');
 
         return hexEncryptedData;
