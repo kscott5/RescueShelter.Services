@@ -12,33 +12,38 @@ class SponsorDb {
         this.model = services.getModel(services.SPONSOR_MODEL_NAME);
     }
 
-    newSponsor(item: any) : Promise<any> {
+    async newSponsor(item: any) : Promise<any> {
         var sponsor = new this.model(item);
 
-        return sponsor.save();
+        var data = await sponsor.save();
+        return data;
     }
 
-    saveSponsor(item: any) : Promise<any>  {
+    async saveSponsor(item: any) : Promise<any>  {
         var sponsor = new this.model(item);
         
         sponsor["audit"].push({modified: new Date(), sponsor_id: sponsor._id});
 
         var options = services.createFindOneAndUpdateOptions();
         
-        return this.model.findOneAndUpdate({_id: sponsor._id}, sponsor, options);
+        var data = await this.model.findOneAndUpdate({_id: sponsor._id}, sponsor, options);
+        return data;
     }
 
-    getSponsor(id: String) : Promise<any>  {
-        return this.model.findById(id);
+    async getSponsor(id: String) : Promise<any>  {
+        var data = await this.model.findById(id);
+        return data;
     }
 
-    getSponsors(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
+    async getSponsors(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
         var condition = (phrase)? {$text: {$search: phrase}}: {};
         
-        return this.model.find(condition)
+        var data = await this.model.find(condition)
             .lean()
             .limit(limit)
             .select(this.__selectionFields);
+
+        return data;
     } 
 } //end SponsorDb class
 
@@ -51,7 +56,7 @@ export class SponsorService {
 
         let db = new SponsorDb();
 
-        app.post("/api/sponsor", jsonBodyParser, (req,res) => {
+        app.post("/api/sponsor", jsonBodyParser, async (req,res) => {
             
             console.debug(`POST: ${req.url}`);
             if(!req.body) {
@@ -60,39 +65,51 @@ export class SponsorService {
            }
 
            res.status(200);
-           Promise.resolve(db.newSponsor(req.body))
-            .catch(error => res.json(jsonResponse.createError(error)))
-            .then(data => res.json(jsonResponse.createData(data)));
+           try {
+                var data = await db.newSponsor(req.body);
+                res.json(jsonResponse.createData(data));
+           } catch(error) {
+               res.json(jsonResponse.createError(error));
+           }            
         });
 
-        app.post("/api/sponsor/:id", jsonBodyParser, (req,res) => {
+        app.post("/api/sponsor/:id", jsonBodyParser, async (req,res) => {
             console.debug(`POST [:id]: ${req.url}`);            
             
             res.status(200);
-            Promise.resolve(db.saveSponsor(req.body))
-                .catch(error => res.json(jsonResponse.createError(error)) )
-                .then(data => res.json(jsonResponse.createData(data["value"])));
+            try {
+                var data = await db.saveSponsor(req.body);
+                res.json(jsonResponse.createData(data["value"]));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         });
 
-        app.get("/api/sponsor/:id", (req,res) => {
+        app.get("/api/sponsor/:id", async (req,res) => {
             console.debug(`GET [:id]: ${req.url}`);
             res.status(200);
 
-            Promise.resolve(db.getSponsor(req.params.id))
-                .catch(error => res.json(jsonResponse.createError(error)) )
-                .then(data => res.json(jsonResponse.createData(data)) );
+            try {
+                var data = await db.getSponsor(req.params.id);
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         });
 
-        app.get("/api/sponsors", (req,res) => {
+        app.get("/api/sponsors", async (req,res) => {
             console.debug(`GET: ${req.url}`);
             var page = Number.parseInt(req.query.page as any || 1); 
             var limit = Number.parseInt(req.query.limit as any || 5);
             var phrase = req.query.phrase as any || null;
 
             res.status(200);
-            Promise.resolve(db.getSponsors(page,limit,phrase))
-                .then(data => res.json(jsonResponse.createPagination(data, 1, page)))
-                .catch(error => res.json(jsonResponse.createError(error)));
+            try {
+                var data = await db.getSponsors(page,limit,phrase);
+                res.json(jsonResponse.createPagination(data, 1, page));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         });
     } // end publishWebAPI
 } // end SponsorService
