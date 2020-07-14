@@ -2,6 +2,7 @@ import random
 import datetime
 import uuid
 import pymongo
+from hashlib import blake2b
 
 word_size_min = 5
 word_size_max = 10
@@ -9,6 +10,19 @@ wordSize = random.randint(word_size_min, word_size_max)
 
 word_generator = random.sample #Saves the sample([],k=0) function for use later
 wordTemplate =  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+# https://docs.python.org/3.7/library/hashlib.html?highlight=blake#hashlib.blake2b
+# https://www.npmjs.com/package/blake2
+def encryptedData(data, key = 'Rescue Shelter: Security Question Answer') :
+        tmpData = data.strip()
+        tmpSalt = key.strip()
+
+        fn = blake2b(digest_size=32, key=key)
+        fn.update(data.encode('utf-32'))
+        return fn.hexdigest().encode(encoding='utf-32')
+
+def verifyEncryptedData() :
+    print('Verify sponsor sample password data')
 
 def loadSponsorTestData() :
     print('Loading sponsor sample data')
@@ -18,31 +32,22 @@ def loadSponsorTestData() :
 
     db.drop_collection("sponsors")
     col = db.get_collection("sponsors")
-    col.insert_many([
-        {
-            '_id': str(uuid.uuid4()),
-            'firstname': ''.join(word_generator(wordTemplate,wordSize)),
-            'lastname': ''.join(word_generator(wordTemplate,wordSize)),
-            'useremail': '',
-            'photo': '',
-            'security': {},
-            'audit': []
-        } for i in range(10)])
 
-    # https://stackoverflow.com/questions/3974985/update-mongodb-field-using-value-of-another-field
-    # https://stackoverflow.com/questions/29554521/uninstall-mongodb-from-ubuntu
-    # https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
-    # ubuntu 18 install instruction step 2: change from 
-    #
-    # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
-    #
-    # deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.2 multiverse
-    # 
-    col.update_many(
-        {},
-        [ {'$set': {'useremail': { '$concat': ['$firstname', '.', '$lastname', '@rescueshelter.co']}}}]
-    )
-    
+    for index in range(10) :            
+        firstname = ''.join(word_generator(wordTemplate,wordSize))
+        lastname = ''.join(word_generator(wordTemplate,wordSize))
+        col.insert({
+            '_id': str(uuid.uuid4()),
+            'firstname': firstname,
+            'lastname': lastname,
+            'useremail': f'{firstname}.{lastname}@rescueshelter.co',
+            'photo': '',
+            'security': {
+                'password': encryptedData(data='#P@ssw0rd1.', key=f'{firstname}.{lastname}')
+            },
+            'audit': []
+        })
+
     client.close()
 
 def loadAnimalTestData() :
