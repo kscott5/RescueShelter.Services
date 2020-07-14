@@ -1,4 +1,4 @@
-import {Application}  from "express";
+import {Application, Router}  from "express";
 import * as bodyParser from "body-parser";
 import * as services from "./services";
 import {SecurityService, SecurityDb} from "./securityservice";
@@ -12,29 +12,32 @@ class AnimalDb {
         this.model = services.getModel(services.ANIMAL_MODEL_NAME);
     } // end constructor
 
-    newAnimal(item: any) : Promise<any> {
+    async newAnimal(item: any) : Promise<any> {
         var animal = new this.model(item);
             
-        return animal.save().then(product => {return product;});
+        var data = await animal.save();
+        return data;
     }
 
-    saveAnimal(item: any) : Promise<any> {
+    async saveAnimal(item: any) : Promise<any> {
         var animal = new this.model(item);
 
         var options = services.createFindOneAndUpdateOptions();
-        return this.model.findOneAndUpdate({_id: animal._id}, animal, options)
-            .then( doc => { return doc["value"]; });
+        var data = await this.model.findOneAndUpdate({_id: animal._id}, animal, options)
+        return data["value"];
     }
 
-    getAnimal(id: String) : Promise<any>{
-        return this.model.findById(id).then(doc => { return doc;});
+    async getAnimal(id: String) : Promise<any>{
+        var data = await this.model.findById(id);
+        
+        return data;
     } 
 
-    getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
+    async getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
         var animalAggregate = (!phrase)? this.model.aggregate() :
             this.model.aggregate().append({$match: {$text: {$search: phrase}}});
                 
-        return animalAggregate.append([
+        var data = await animalAggregate.append([
             {
                 $lookup: {
                     from: "sponsors",
@@ -60,7 +63,9 @@ class AnimalDb {
                 }
             }}
         ])
-        .limit(limit).then(data => {return data});
+        .limit(limit);
+        
+        return data;
     } 
 } // end AnimalDb
 
