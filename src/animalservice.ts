@@ -81,7 +81,7 @@ export class AnimalService {
         /**
          * @description create a new animal data 
          */
-        app.post("/api/animal/new", jsonBodyParser, function(req,res){
+        app.post("/api/animal/new", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
 
             var hashid = req.body.hashid;
@@ -94,23 +94,23 @@ export class AnimalService {
                 res.json(jsonResponse.createError("HttpPOST request body not valid"));
             }
 
-            var access = {accessType: "hashid", hashid: hashid, useremail: useremail};
-            Promise.resolve(securityDb.verifyAccess(access))
-                .then(value => {
-                    console.log(value);
-                    return Promise.resolve(db.newAnimal(req.body))
-                        .then(data => {res.json(jsonResponse.createData(data));})
-                })
-                .catch(error => { 
-                    console.log(error);
-                    res.json(jsonResponse.createError("You do not have access."));
-                });
+            try {
+                var access = {accessType: "hashid", hashid: hashid, useremail: useremail};
+                var auth = await securityDb.verifyAccess(access);
+                
+
+                var data = await db.newAnimal(req.body);
+                res.json(jsonResponse.createData(data));
+            } catch(error) { 
+                console.log(error);
+                res.json(jsonResponse.createError("You do not have access."));
+            }
         });
 
         /**
          * @description update the animal data
          */
-        app.post("/api/animal/:id", jsonBodyParser, function(req,res){
+        app.post("/api/animal/:id", jsonBodyParser, async (req,res) => {
             console.debug(`POST [:id] update ${req.url}`);
 
             var id = req.params.id;
@@ -124,25 +124,23 @@ export class AnimalService {
                 res.json(jsonResponse.createError("HttpPOST request parameter and/or json body not valid"));
             }
             
-            var access = {accessType: "hashid", hashid: hashid, useremail: useremail};
-            Promise.resolve(securityDb.verifyAccess(access))
-                .then(data => {
-                    return Promise.resolve(db.saveAnimal(animal))
-                        .then(data => {
-                            res.json(jsonResponse.createData(data));
-                        });
-                })
-                .catch(error => {
-                    console.log(error);
-                    res.json(jsonResponse.createError("You do not have access."));
-                });
+            try {
+                var access = {accessType: "hashid", hashid: hashid, useremail: useremail};
+                var auth = await securityDb.verifyAccess(access);
+
+                var data = await db.saveAnimal(animal);
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
+                console.log(error);
+                res.json(jsonResponse.createError("You do not have access."));
+            }
         }); // end POST [update] /api/animal/:id 
 
         /**
          * @description Retrieves single item
          * @param id unique identifier of item
          */
-        app.get("/api/animal/:id", function(req,res){
+        app.get("/api/animal/:id", async (req,res) => {
             console.debug(`GET: ${req.url}`);
             if (!req.params.id) {
                     res.status(404);
@@ -150,20 +148,19 @@ export class AnimalService {
                     return;
             }
             res.status(200);
-            Promise.resolve(db.getAnimal(req.params.id))
-                .then(data => {
-                    res.json(jsonResponse.createData(data));
-                })
-                .catch(error => {
+            try {
+                var data = await db.getAnimal(req.params.id);
+                res.json(jsonResponse.createData(data));
+            } catch(error) {
                     console.log(error);
                     res.json(jsonResponse.createError(error));
-                });                
+            }
         });
 
         /**
          * @description Retrieves a json resultset of items
          */
-        app.get("/api/animals/", function(req,res){
+        app.get("/api/animals/", async (req,res) => {
             console.debug(`GET: ${req.url}`);
             var page = Number.parseInt(req.query["page"] as any || 1); 
             var limit = Number.parseInt(req.query["limit"] as any || 5);
@@ -171,9 +168,12 @@ export class AnimalService {
 
             res.status(200);
             
-            Promise.resolve(db.getAnimals(page, limit, phrase))
-            .then(value => res.json(jsonResponse.createPagination(value,1,page)))
-            .catch(reason => res.json(jsonResponse.createError(reason)));
+            try {
+                var data = await db.getAnimals(page, limit, phrase);
+                res.json(jsonResponse.createPagination(data,1,page));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
         });
     } // end publishWebAPI
 }; // end AnimalService class
