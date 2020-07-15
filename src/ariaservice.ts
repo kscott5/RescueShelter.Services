@@ -39,6 +39,6 @@ export class AriaService {
         }
 
         router.get("/:lang", jsonParser, stub);
-        app.use("/api/aria");
+        app.use('/api/aria', router);
     } // end publishWebAPI
 } // end AriaService
