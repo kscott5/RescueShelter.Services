@@ -33,9 +33,12 @@ def loadSponsorTestData() :
     db.drop_collection("sponsors")
     col = db.get_collection("sponsors")
 
+    print('Use #P@ssw0rd1. with these available email:')
     for index in range(10) :            
         firstname = ''.join(word_generator(wordTemplate,wordSize))
         lastname = ''.join(word_generator(wordTemplate,wordSize))
+
+        print(f'\t{firstname}.{lastname}@rescueshelter.co')
         col.insert_one({
             '_id': str(uuid.uuid4()),
             'firstname': firstname,
