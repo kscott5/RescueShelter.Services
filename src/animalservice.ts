@@ -55,7 +55,7 @@ class AnimalDb {
             },
             {
             $project: {
-                name: 1, description: 1, endangered: 1, imageSrc: 1,
+                name: 1, description: 1, endangered: 1, image: 1,
                 sponsors: {
                     $filter: {
                         input: '$sponsors',
