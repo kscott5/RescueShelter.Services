@@ -86,7 +86,7 @@ def loadAnimalTestData() :
             'description': description,
             'image': { 
                 'content': animalImageIconType_choice(animalImageIconTypes),
-                'contenttype': 'class'
+                'contenttype': 'icon'
             },
             'category': animalCategoryType_choice(animalCategoryTypes),
             'endangered': endangeredTypes_choice(endangeredTypes),

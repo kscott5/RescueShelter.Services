@@ -76,7 +76,10 @@ export const ANIMAL_MODEL_NAME = "animal";
 createMongooseModel(ANIMAL_MODEL_NAME, ()=>{
     var schema = createMongooseSchema({
         name: {type: String, unique:true, required: [true, '*']},
-        imageSrc: String,
+        image: {
+            content: String,
+            contenttype: String
+        },
         endangered: Boolean,
         category: String,
         description: String,
