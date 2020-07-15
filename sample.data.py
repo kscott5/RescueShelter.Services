@@ -68,7 +68,7 @@ def loadAnimalTestData() :
 
     size_min = 100
     size_max = 500
-    population_generator = random.randint(size_min,size_max) #Saves the randint(min,max) function for use later
+    population_generator = random.randint #Saves the randint(min,max) function for use later
 
     description = '''Lorem ipsum dōlor sit ǽmet, reqūe tation constiÞuto vis eu, est ðōlor omnīum āntiopæm ei. 
                     Zril domīng cū eam, hās ið equīðem explīcærī voluptǽtum. Iusto regiōnē partiendo meǣ ne, vim 
@@ -90,7 +90,7 @@ def loadAnimalTestData() :
             },
             'category': animalCategoryType_choice(animalCategoryTypes),
             'endangered': endangeredTypes_choice(endangeredTypes),
-            'population': population_generator,
+            'population': population_generator(size_min,size_max),
             'dates': {
                 'created': datetime.datetime.utcnow(),
                 'modified': datetime.datetime.utcnow()
