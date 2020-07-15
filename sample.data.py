@@ -88,7 +88,8 @@ def loadAnimalTestData() :
             'dates': {
                 'created': datetime.datetime.utcnow(),
                 'modified': datetime.datetime.utcnow()
-            }
+            },
+            'sponsors': []
         } for i in range(100000)])
 
     client.close()
