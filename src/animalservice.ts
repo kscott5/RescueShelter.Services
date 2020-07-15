@@ -3,6 +3,8 @@ import * as bodyParser from "body-parser";
 import * as services from "./services";
 import {SecurityService, SecurityDb} from "./securityservice";
 
+let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+
 class AnimalDb {
     private __selectionFields;
     private model;
@@ -83,10 +85,7 @@ export class AnimalService {
         let db = new AnimalDb();
         let securityDb = new SecurityDb();
 
-        /**
-         * @description create a new animal data 
-         */
-        app.post("/api/animal/new", jsonBodyParser, async (req,res) => {
+        async function routeNewAnimal(req,res) {
             console.debug(`POST: ${req.url}`);
 
             var hashid = req.body.hashid;
@@ -110,12 +109,9 @@ export class AnimalService {
                 console.log(error);
                 res.json(jsonResponse.createError("You do not have access."));
             }
-        });
+        } // end routeNewAnimal
 
-        /**
-         * @description update the animal data
-         */
-        app.post("/api/animal/:id", jsonBodyParser, async (req,res) => {
+        async function routeUpdateAnimalWithId(req,res) {
             console.debug(`POST [:id] update ${req.url}`);
 
             var id = req.params.id;
@@ -139,13 +135,25 @@ export class AnimalService {
                 console.log(error);
                 res.json(jsonResponse.createError("You do not have access."));
             }
-        }); // end POST [update] /api/animal/:id 
+        } //end routeUpdateAnimalWithId
 
-        /**
-         * @description Retrieves single item
-         * @param id unique identifier of item
-         */
-        app.get("/api/animal/:id", async (req,res) => {
+        async function routeAnimals(req,res) {
+            console.debug(`GET: ${req.url}`);
+            var page = Number.parseInt(req.query["page"] as any || 1); 
+            var limit = Number.parseInt(req.query["limit"] as any || 5);
+            var phrase = req.query["phrase"] as string || '';
+
+            res.status(200);
+            
+            try {
+                var data = await db.getAnimals(page, limit, phrase);
+                res.json(jsonResponse.createPagination(data,1,page));
+            } catch(error) {
+                res.json(jsonResponse.createError(error));
+            }
+        } //end routeAnimals
+
+        async function routeGetAnimalWithId(req,res) {
             console.debug(`GET: ${req.url}`);
             if (!req.params.id) {
                     res.status(404);
@@ -160,25 +168,30 @@ export class AnimalService {
                     console.log(error);
                     res.json(jsonResponse.createError(error));
             }
-        });
+        } // end routeGetAnimalWithId
+        
+        /**
+         * @description create a new animal data 
+         */
+        app.post("/api/animal/new", jsonBodyParser, routeNewAnimal);
+        router.post("/new", jsonBodyParser, routeNewAnimal);
 
         /**
-         * @description Retrieves a json resultset of items
+         * @description update the animal data
          */
-        app.get("/api/animals/", async (req,res) => {
-            console.debug(`GET: ${req.url}`);
-            var page = Number.parseInt(req.query["page"] as any || 1); 
-            var limit = Number.parseInt(req.query["limit"] as any || 5);
-            var phrase = req.query["phrase"] as string || '';
+        app.post("/api/animal/:id", jsonBodyParser, routeUpdateAnimalWithId);
+        router.post("/:id", jsonBodyParser, routeUpdateAnimalWithId);
 
-            res.status(200);
-            
-            try {
-                var data = await db.getAnimals(page, limit, phrase);
-                res.json(jsonResponse.createPagination(data,1,page));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
-        });
+        /**
+         * @description Retrieves single item
+         * @param id unique identifier of item
+         */
+        app.get("/api/animal/:id", routeGetAnimalWithId);
+
+        /**
+         * @description Retrieves a json list of animals
+         */
+        app.get("/api/animals/", routeAnimals);
+        router.get("/", routeAnimals);
     } // end publishWebAPI
 }; // end AnimalService class
