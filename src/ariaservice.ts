@@ -1,4 +1,4 @@
-import {Application} from "express";
+import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
 import * as services from "./services";
 
@@ -13,6 +13,7 @@ import * as services from "./services";
  * 
  */
 
+let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 services.createMongooseModel("aria", 
     services.createMongooseSchema({
@@ -29,11 +30,15 @@ export class AriaService {
         let jsonParser = bodyParser.json();
         let jsonResponse = new services.JsonResponse();
 
-        app.get("/api/aria/:lang", jsonParser, async (req,res) => {
+
+        async function stub(req,res) {
             res.status(200);
 
             const lang = req.params.lang;
             res.json(jsonResponse.createError("Not implemented yet"));
-        });
+        }
+
+        router.get("/:lang", jsonParser, stub);
+        app.use("/api/aria");
     } // end publishWebAPI
 } // end AriaService
