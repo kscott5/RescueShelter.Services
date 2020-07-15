@@ -67,7 +67,7 @@ class Generate {
         const hash = blake2.createKeyedHash("blake2b", Buffer.from(tmpKey), {digestLength: 16})
         hash.update(Buffer.from(tmpData))
 
-        const encryptedHashData = hash.digest()
+        const encryptedHashData = hash.digest('hex')
         return encryptedHashData;
     }
 
