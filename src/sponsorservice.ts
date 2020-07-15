@@ -1,7 +1,8 @@
-import {Application, json} from "express";
+import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
 import * as services from "./services";
 
+let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class SponsorDb {
     private __selectionFields;
@@ -56,7 +57,7 @@ export class SponsorService {
 
         let db = new SponsorDb();
 
-        app.post("/api/sponsor", jsonBodyParser, async (req,res) => {
+        router.post("/", jsonBodyParser, async (req,res) => {
             
             console.debug(`POST: ${req.url}`);
             if(!req.body) {
@@ -73,7 +74,7 @@ export class SponsorService {
            }            
         });
 
-        app.post("/api/sponsor/:id", jsonBodyParser, async (req,res) => {
+        router.post("/:id", jsonBodyParser, async (req,res) => {
             console.debug(`POST [:id]: ${req.url}`);            
             
             res.status(200);
@@ -85,7 +86,7 @@ export class SponsorService {
             }
         });
 
-        app.get("/api/sponsor/:id", async (req,res) => {
+        router.get("/:id", async (req,res) => {
             console.debug(`GET [:id]: ${req.url}`);
             res.status(200);
 
@@ -97,7 +98,7 @@ export class SponsorService {
             }
         });
 
-        app.get("/api/sponsors", async (req,res) => {
+        router.get("/", async (req,res) => {
             console.debug(`GET: ${req.url}`);
             var page = Number.parseInt(req.query.page as any || 1); 
             var limit = Number.parseInt(req.query.limit as any || 5);
@@ -111,5 +112,7 @@ export class SponsorService {
                 res.json(jsonResponse.createError(error));
             }
         });
+
+        app.use("/api/sponsors", router);
     } // end publishWebAPI
 } // end SponsorService
