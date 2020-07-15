@@ -170,33 +170,12 @@ export class AnimalService {
             }
         } // end routeGetAnimalWithId
 
-        // app.use("/api/animals", router);
-        // router.get("/", routeAnimals);
-        // app.get("/:id", routeGetAnimalWithId);
-        // router.post("/new", jsonBodyParser, routeNewAnimal);
-        // router.post("/:id", jsonBodyParser, routeUpdateAnimalWithId);
-        // return;
-
-        /**
-         * @description create a new animal data 
-         */
-        app.post("/api/animal/new", jsonBodyParser, routeNewAnimal);
-
-        /**
-         * @description update the animal data
-         */
-        app.post("/api/animal/:id", jsonBodyParser, routeUpdateAnimalWithId);
-
-        /**
-         * @description Retrieves single item
-         * @param id unique identifier of item
-         */
-        app.get("/api/animal/:id", routeGetAnimalWithId);
-
-        /**
-         * @description Retrieves a json list of animals
-         */
-        app.get("/api/animals/", routeAnimals);
+        router.get("/", routeAnimals);
+        router.get("/:id", routeGetAnimalWithId);
+        router.post("/new", jsonBodyParser, routeNewAnimal);
+        router.post("/:id", jsonBodyParser, routeUpdateAnimalWithId);
+        
+        app.use("/api/animals", router);        
     } // end publishWebAPI
 }; // end AnimalService class
 
