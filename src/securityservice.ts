@@ -1,10 +1,12 @@
-import {Application} from "express";
+import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
 import * as services from "./services";
 import * as blake2 from "blake2";
 
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
+
+let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class Track {
     private model;
@@ -279,7 +281,7 @@ export class SecurityService {
         let db = new SecurityDb();
         let generate = new Generate();
         
-        app.post("/api/secure/unique/sponsor", jsonBodyParser, async (req,res) => {
+        router.post("/unique/sponsor", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -297,7 +299,7 @@ export class SecurityService {
             }
         });
 
-        app.post("/api/secure/data", jsonBodyParser, async (req,res) => {
+        router.post("/data", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -311,7 +313,7 @@ export class SecurityService {
             res.json(jsonResponse.createData(generate.encryptedData(data,secret)));
         });
 
-        app.post("/api/secure/verify", jsonBodyParser, async (req,res) => {
+        router.post("/verify", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -328,9 +330,9 @@ export class SecurityService {
             } catch(error) {
                 res.json(jsonResponse.createError(error));
             }
-        }); // end /api/secure/verify
+        }); // end /verify
 
-        app.post("/api/secure/deauth", jsonBodyParser, async (req,res) => {
+        router.post("/deauth", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -352,7 +354,7 @@ export class SecurityService {
         /**
          * Authenticate the sponsor and generate app access hash id
          */
-        app.post("/api/secure/auth", jsonBodyParser, async (req,res) => {
+        router.post("/auth", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -374,7 +376,7 @@ export class SecurityService {
         /**
          * Registers then authenticate new sponsor
          */
-        app.post("/api/secure/registration", jsonBodyParser, async (req,res) => {
+        router.post("/registration", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             if(!req.body) {
                 res.status(200);
@@ -403,6 +405,8 @@ export class SecurityService {
             } catch(error) {
                 res.json(jsonResponse.createError(error))
             }
-        }); // end /api/secure/registration
+        }); // end /registration
+
+        app.use('/api/secure', router);
     } // end publishWebAPI
 } // end SecurityService
