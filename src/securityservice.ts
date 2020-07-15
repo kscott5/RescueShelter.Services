@@ -2,6 +2,7 @@ import {Application} from "express";
 import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
 import * as services from "./services";
+import * as blake2 from "blake2";
 
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
 
@@ -58,15 +59,18 @@ class Generate {
         return securityModel;
     }
 
-    encryptedData(data: String, salt: String = 'Rescue Shelter: Security Question Answer') {
+    encryptedData(data: String, key: String = 'Rescue Shelter: Security Question Answer') {
+        
         const tmpData = data.trim();
-        const tmpSalt = salt.trim();
+        const tmpKey = key.trim();
+    
+        const hash = blake2.createKeyedHash("blake2b", Buffer.from(tmpKey), {digestLength: 16})
+        hash.update(Buffer.from(tmpData))
 
-        const encryptedData = crypto.pbkdf2Sync(tmpData, tmpSalt, 1000, 50, 'sha256');
-        const hexEncryptedData = encryptedData.toString('hex');
-
-        return hexEncryptedData;
+        const encryptedHashData = hash.digest()
+        return encryptedHashData;
     }
+
 
     /**
      * 
