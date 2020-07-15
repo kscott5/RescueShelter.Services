@@ -54,6 +54,12 @@ def loadSponsorTestData() :
 def loadAnimalTestData() :
     print('Loading sample animal data')
 
+    animalImageIconType_choice = random.choice
+    animalImageIconTypes = ['deskpro', 'docker', 'earlybirds', 'drupal', 'firefox',
+        'github', 'gitlab', 'grunt', 'linux', 'napster', 'phoenix framework', 'qq',
+        'reddit alien', 'snapchat ghost', 'sticker mule', 'twitter', 'tripadvisor',
+        'vaadin', 'themeisle', 'github alternate']
+
     animalCategoryType_choice = random.choice
     animalCategoryTypes = ['fishes', 'amphibians', 'reptiles', 'birds', 'mammals', 'invertebrates']
 
@@ -78,7 +84,10 @@ def loadAnimalTestData() :
         {
             'name': ''.join(word_generator(wordTemplate, wordSize)),
             'description': description,
-            'imageSrc': '',
+            'image': { 
+                'content': animalImageIconType_choice(animalImageIconTypes),
+                'contenttype': 'class'
+            },
             'category': animalCategoryType_choice(animalCategoryTypes),
             'endangered': endangeredTypes_choice(endangeredTypes),
             'population': population_generator,
