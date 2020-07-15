@@ -169,18 +169,23 @@ export class AnimalService {
                     res.json(jsonResponse.createError(error));
             }
         } // end routeGetAnimalWithId
-        
+
+        // app.use("/api/animals", router);
+        // router.get("/", routeAnimals);
+        // app.get("/:id", routeGetAnimalWithId);
+        // router.post("/new", jsonBodyParser, routeNewAnimal);
+        // router.post("/:id", jsonBodyParser, routeUpdateAnimalWithId);
+        // return;
+
         /**
          * @description create a new animal data 
          */
         app.post("/api/animal/new", jsonBodyParser, routeNewAnimal);
-        router.post("/new", jsonBodyParser, routeNewAnimal);
 
         /**
          * @description update the animal data
          */
         app.post("/api/animal/:id", jsonBodyParser, routeUpdateAnimalWithId);
-        router.post("/:id", jsonBodyParser, routeUpdateAnimalWithId);
 
         /**
          * @description Retrieves single item
@@ -192,6 +197,6 @@ export class AnimalService {
          * @description Retrieves a json list of animals
          */
         app.get("/api/animals/", routeAnimals);
-        router.get("/", routeAnimals);
     } // end publishWebAPI
 }; // end AnimalService class
+
