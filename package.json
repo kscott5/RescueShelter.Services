@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "author": "Karega K. Scott",
-  "license": "GNU",
+  "license": "LGPL-3.0-or-later",
   "dependencies": {
     "blake2": "^4.0.1",
     "body-parser": "^1.19.0",
