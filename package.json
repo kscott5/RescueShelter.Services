@@ -21,6 +21,8 @@
     "clean": "rm -r -f ./dist",
     "compile": "yarn run clean & tsc -p tsconfig.json",
     "watch": "yarn run clean & tsc -p tsconfig.json --watch",
+    "mongo": "docker run -p 27017:27017 --rm --name mongo_dev mongo mongod",
+    "dataset": "python ./sample.data.py",
     "start": "node ./dist/server.js",
     "test": "jest"
   },
