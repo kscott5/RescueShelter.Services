@@ -1,6 +1,5 @@
 import random
 import datetime
-import uuid
 import pymongo
 from hashlib import blake2b
 
@@ -40,7 +39,6 @@ def loadSponsorTestData() :
 
         print(f'\t{firstname}.{lastname}@rescueshelter.co')
         col.insert_one({
-            '_id': str(uuid.uuid4()),
             'firstname': firstname,
             'lastname': lastname,
             'useremail': f'{firstname}.{lastname}@rescueshelter.co',
@@ -78,7 +76,6 @@ def loadAnimalTestData() :
     col = db.get_collection("animals")
     col.insert_many([
         {
-            '_id': str(uuid.uuid4()),
             'name': ''.join(word_generator(wordTemplate, wordSize)),
             'description': description,
             'imageSrc': '',
