@@ -41,7 +41,7 @@ const apiServer = express()
 // ************************************
 //  Middleware sequential use important
 // ************************************
-apiServer.use(morgan("[development]"));
+apiServer.use(morgan('dev'));
 
 var corsOptionsDelegate = function (req, callback) {
     if (whitelist === undefined || whitelist.length == 0 || whitelist.indexOf(req.headers.origin) === 0) {
