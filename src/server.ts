@@ -44,7 +44,7 @@ const apiServer = express()
 apiServer.use(morgan("[development]"));
 
 var corsOptionsDelegate = function (req, callback) {
-    if (whitelist === null || whitelist.length == 0 || whitelist.indexOf(req.headers.origin) === 0) {
+    if (whitelist === undefined || whitelist.length == 0 || whitelist.indexOf(req.headers.origin) === 0) {
         callback(null, true);
     }
     else {
@@ -67,13 +67,21 @@ apiServer.use(express.static(publicPath));
 
 
 export function listener(): void {
+    if(middleware === null || middleware === undefined) {
+        console.log('{server}.middleware not initialized');
+        return;
+    }
     middleware.forEach((fn) => {
-        fn(apiServer);
+        try {
+            fn(apiServer);
+        } catch {
+            console.log('Invalid function format. [HINT: ' + fn.name + '(app: express.Application)]');
+        }
     });
 
     apiServer.listen(serverPort, () => {
-        var port = (serverPort === null)? 3301: serverPort;
-        var server = (serverName === null)? 'Rescue Shelter': serverName;
+        var port = (serverPort === null || serverPort === undefined) ? 3301: serverPort;
+        var server = (serverName === null || serverName == undefined)? 'Rescue Shelter': serverName;
 
         console.log(server + ' listening on port: ' + port);
         console.log('wwwroot: ' + publicPath);
