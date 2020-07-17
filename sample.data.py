@@ -1,7 +1,12 @@
 import random
 import datetime
 import pymongo
-from hashlib import blake2b
+
+# Python 3.7 in use.
+# Python 3.6 minimal requirement
+#
+# PEP 498 introduces a new kind of string literals: f-strings, or formatted string literals.
+from hashlib import blake2b # Python 3.6
 
 word_size_min = 5
 word_size_max = 10
