@@ -83,7 +83,7 @@ createMongooseModel(ANIMAL_MODEL_NAME, ()=>{
         endangered: Boolean,
         category: String,
         description: String,
-        population: Number,
+        data: {type: Array<{population: Number, created: Date}>()},
         dates: {
             created: Date ,
             modified: Date
