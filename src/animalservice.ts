@@ -5,7 +5,7 @@ import {SecurityService, SecurityDb} from "./securityservice";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
-class AnimalDb {
+class AnimalManagerDb {
     private __selectionFields;
     private model;
 
@@ -28,47 +28,6 @@ class AnimalDb {
         var data = await this.model.findOneAndUpdate({_id: animal._id}, animal, options)
         return data["value"];
     }
-
-    async getAnimal(id: String) : Promise<any>{
-        var data = await this.model.findById(id);
-        
-        return data;
-    } 
-
-    async getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
-        var animalAggregate = (!phrase)? this.model.aggregate() :
-            this.model.aggregate().append({$match: {$text: {$search: phrase}}});
-                
-        var data = await animalAggregate.append([
-            {
-                $lookup: {
-                    from: "sponsors",
-                    let: {animals_sponsors: '$sponsors'},
-                    pipeline: [{
-                        $project: {
-                            _id: false, useremail: 1, username: 1, 
-                            is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
-                        }            
-                    }],
-                    as: "sponsors"
-                }        
-            },
-            {
-            $project: {
-                name: 1, description: 1, endangered: 1, image: 1,
-                sponsors: {
-                    $filter: {
-                        input: '$sponsors',
-                        as: 'contributor',
-                        cond: {$eq: ['$$contributor.is_sponsor', true]}
-                    }
-                }
-            }}
-        ])
-        .limit(limit);
-        
-        return data;
-    } 
 } // end AnimalDb
 
 export class AnimalService {
@@ -82,42 +41,9 @@ export class AnimalService {
         let jsonBodyParser = bodyParser.json({type: 'application/json'});
         let jsonResponse = new services.JsonResponse();            
 
-        let db = new AnimalDb();
+        let db = new AnimalManagerDb();
         let securityDb = new SecurityDb();
         
-        router.get("/", async (req,res) => {
-            console.debug(`GET: ${req.url}`);
-            var page = Number.parseInt(req.query["page"] as any || 1); 
-            var limit = Number.parseInt(req.query["limit"] as any || 5);
-            var phrase = req.query["phrase"] as string || '';
-
-            res.status(200);
-            
-            try {
-                var data = await db.getAnimals(page, limit, phrase);
-                res.json(jsonResponse.createPagination(data,1,page));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
-        }); //end routeAnimals
-
-        router.get("/:id", async (req,res) => {
-            console.debug(`GET: ${req.url}`);
-            if (!req.params.id) {
-                    res.status(404);
-                    res.send("HttpGET id not available");
-                    return;
-            }
-            res.status(200);
-            try {
-                var data = await db.getAnimal(req.params.id);
-                res.json(jsonResponse.createData(data));
-            } catch(error) {
-                    console.log(error);
-                    res.json(jsonResponse.createError(error));
-            }
-        }); // end routeGetAnimalWithId
-
         router.post("/new", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
 
