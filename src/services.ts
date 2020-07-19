@@ -122,6 +122,26 @@ export function getModel(modelName: string) : Model<Document> {
 
     throw new Error(`${modelName} not a valid model name.`);    
 }
+export function getModelReader(modelName: string) : Model<Document> {    
+    if(__connection.models[modelName] !== undefined) {
+        var reader = __connection.models[modelName];
+
+        // Pure javascript override function
+        // NOTE: .NET, Java and similar programming language require class inheritance with override
+        reader.create.prototype = () => {throw new Error(`create not implemented on model reader.`);};
+        reader.remove.prototype = () => {throw new Error(`remove not implemented on model reader.`);};
+        reader.deleteMany.prototype = () => {throw new Error(`deleteMany not implemented on model reader.`);};
+        reader.deleteOne.prototype = () => {throw new Error(`deleteOne not implemented on model reader.`);};
+        reader.update.prototype = () => {throw new Error(`update not implemented on model reader.`);};
+        reader.updateMany.prototype = () => {throw new Error(`updateMany not implemented on model reader.`);};
+        reader.updateOne.prototype = () => {throw new Error(`updateOne not implemented on model reader.`);};
+
+        return;
+    }
+
+    throw new Error(`${modelName} not a valid model reader name.`);
+}
+
 
 export function createFindOneAndUpdateOptions(fields?: Object|String, upsert: boolean = false) {
     // MongoDB https://mongodb.github.io/node-mongodb-native/3.2/api/Collection.html#findOneAndUpdate
