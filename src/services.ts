@@ -128,13 +128,13 @@ export function getModelReader(modelName: string) : Model<Document> {
 
         // Pure javascript override function
         // NOTE: .NET, Java and similar programming language require class inheritance with override
-        model.prototype.create = () => {throw new Error(`create not implemented on model reader.`);};
-        model.prototype.remove = () => {throw new Error(`remove not implemented on model reader.`);};
-        model.prototype.deleteMany = () => {throw new Error(`deleteMany not implemented on model reader.`);};
-        model.prototype.deleteOne = () => {throw new Error(`deleteOne not implemented on model reader.`);};
-        model.prototype.update = () => {throw new Error(`update not implemented on model reader.`);};
-        model.prototype.updateMany = () => {throw new Error(`updateMany not implemented on model reader.`);};
-        model.prototype.updateOne = () => {throw new Error(`updateOne not implemented on model reader.`);};
+        model.prototype.create = async () : Promise<any>  => {throw new Error(`create not implemented on model reader.`);};
+        model.prototype.remove = async () : Promise<any>  => {throw new Error(`remove not implemented on model reader.`);};
+        model.prototype.deleteMany = async () : Promise<any> => {throw new Error(`deleteMany not implemented on model reader.`);};
+        model.prototype.deleteOne = async () : Promise<any>  => {throw new Error(`deleteOne not implemented on model reader.`);};
+        model.prototype.update = async () : Promise<any> => {throw new Error(`update not implemented on model reader.`);};
+        model.prototype.updateMany = async () : Promise<any> => {throw new Error(`updateMany not implemented on model reader.`);};
+        model.prototype.updateOne = async () : Promise<any> => {throw new Error(`updateOne not implemented on model reader.`);};
 
         return model;
     }
