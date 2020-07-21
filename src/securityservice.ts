@@ -407,6 +407,6 @@ export class SecurityService {
             }
         }); // end /registration
 
-        app.use('/api/secure', router);
+        app.use('/api/manage/secure', router);
     } // end publishWebAPI
 } // end SecurityService
