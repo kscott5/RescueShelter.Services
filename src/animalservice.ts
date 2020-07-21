@@ -96,7 +96,7 @@ export class AnimalService {
             }
         }); //end routeUpdateAnimalWithId       
                 
-        app.use("/api/animals", router);        
+        app.use("/api/manage/animals", router);        
     } // end publishWebAPI
 }; // end AnimalService class
 
