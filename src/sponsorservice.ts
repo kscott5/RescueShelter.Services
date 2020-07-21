@@ -30,22 +30,6 @@ class SponsorDb {
         var data = await this.model.findOneAndUpdate({_id: sponsor._id}, sponsor, options);
         return data;
     }
-
-    async getSponsor(id: String) : Promise<any>  {
-        var data = await this.model.findById(id);
-        return data;
-    }
-
-    async getSponsors(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
-        var condition = (phrase)? {$text: {$search: phrase}}: {};
-        
-        var data = await this.model.find(condition)
-            .lean()
-            .limit(limit)
-            .select(this.__selectionFields);
-
-        return data;
-    } 
 } //end SponsorDb class
 
 export class SponsorService {
@@ -86,33 +70,6 @@ export class SponsorService {
             }
         });
 
-        router.get("/:id", async (req,res) => {
-            console.debug(`GET [:id]: ${req.url}`);
-            res.status(200);
-
-            try {
-                var data = await db.getSponsor(req.params.id);
-                res.json(jsonResponse.createData(data));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
-        });
-
-        router.get("/", async (req,res) => {
-            console.debug(`GET: ${req.url}`);
-            var page = Number.parseInt(req.query.page as any || 1); 
-            var limit = Number.parseInt(req.query.limit as any || 5);
-            var phrase = req.query.phrase as any || null;
-
-            res.status(200);
-            try {
-                var data = await db.getSponsors(page,limit,phrase);
-                res.json(jsonResponse.createPagination(data, 1, page));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
-        });
-
-        app.use("/api/sponsors", router);
+        app.use("/api/manage/sponsors", router);
     } // end publishWebAPI
 } // end SponsorService
