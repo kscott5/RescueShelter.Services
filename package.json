@@ -1,6 +1,6 @@
 {
   "name": "rescueshelter.services",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "main": "index.js",
   "author": "Karega K. Scott",
   "license": "LGPL-3.0-or-later",
@@ -16,7 +16,7 @@
     "mongoose": "^5.9.22",
     "morgan": "^1.10.0",
     "path": "^0.12.7",
-    "rescueshelter.core": "^1.0.0"
+    "rescueshelter.core": "^1.0.2"
   },
   "scripts": {
     "clean": "rm -r -f ./dist",
