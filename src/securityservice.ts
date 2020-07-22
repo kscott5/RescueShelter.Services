@@ -1,7 +1,7 @@
 import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
-import * as services from "./services";
+import {CoreServices} from "rescueshelter.core";
 import * as blake2 from "blake2";
 
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
@@ -11,7 +11,7 @@ let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 class Track {
     private model;
     constructor() {
-        this.model = services.getModel(services.TRACK_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.TRACK_MODEL_NAME);
     }
 
     request(action: any) {
@@ -32,7 +32,7 @@ class Track {
 class Generate {
     private model;
     constructor(){
-        this.model = services.getModel(services.SECURITY_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.SECURITY_MODEL_NAME);
     }
 
     security(useremail: String, textPassword: String, questions?: any) {
@@ -80,7 +80,7 @@ class Generate {
      */
     private hashId(doc: any) : Promise<any> {
         if(!doc)
-            return Promise.reject(services.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
+            return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
 
         var now = new Date();
         var expires = new Date(now.getTime()+SESSION_TIME);
@@ -93,12 +93,12 @@ class Generate {
         var tokenModel = this.model;
         var update = new tokenModel({useremail: useremail, hashid: hashid, expires: expires.getTime()});
 
-        var options = services.createFindOneAndUpdateOptions({_id: false, hashid: 1, expiration: 1}, true);
+        var options = CoreServices.createFindOneAndUpdateOptions({_id: false, hashid: 1, expiration: 1}, true);
         return tokenModel.findOneAndUpdate({useremail: useremail}, update, options)
             .then(product => {return product["value"]} )
             .catch(err => {
                 console.log(err);
-                return Promise.reject(services.SYSTEM_UNAVAILABLE_MSG);
+                return Promise.reject(CoreServices.SYSTEM_UNAVAILABLE_MSG);
             });
     } // end hashId
 } // end Generate
@@ -113,7 +113,7 @@ export class SecurityDb {
     
         this.generate = new Generate();
 
-        this.model = services.getModel(services.SECURITY_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.SECURITY_MODEL_NAME);
     } // end constructor
 
     deauthenticate(hashid: String, useremail: String) : Promise<any> { 
@@ -126,7 +126,7 @@ export class SecurityDb {
         // Format improves readable and increases the Number of lines
         const now = new Date();            
 
-        const sponsor = services.getModel(services.SPONSOR_MODEL_NAME);
+        const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
         return sponsor.aggregate([
             {
                 $lookup: { // left outer join on sponsor. token exists and valid
@@ -164,13 +164,13 @@ export class SecurityDb {
         .limit(1)
         .then(doc => {
             if(doc.length === 0)
-                return Promise.reject(services.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
+                return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
 
             var sponsor = doc[0];                    
             if(sponsor.token.length === 1) { // session exists                        
                 var token = sponsor.token[0]; 
                 if(token.expired) 
-                    return Promise.reject(services.SYSTEM_SESSION_EXPIRED);
+                    return Promise.reject(CoreServices.SYSTEM_SESSION_EXPIRED);
 
                 sponsor.token = null;
                 return Promise.resolve({hashid: token.hashid, sponsor: sponsor});
@@ -188,7 +188,7 @@ export class SecurityDb {
             return Promise.reject("Sponsor security creation issue. Contact system administrator");
         }
 
-        const options = services.createFindOneAndUpdateOptions();
+        const options = CoreServices.createFindOneAndUpdateOptions();
         return this.model.findOneAndUpdate({useremail: useremail}, {$set: {security: securityModel}}, options);
     }
 
@@ -250,7 +250,7 @@ export class SecurityDb {
     }
 
     private verifyUniqueUserName(name: String) : Promise<any> {
-        const sponsor = services.getModel(services.SPONSOR_MODEL_NAME);
+        const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
         return sponsor.findOne({useremail: name})
             .then(doc => { 
                 return (doc === null)? 
@@ -260,7 +260,7 @@ export class SecurityDb {
     }
 
     private verifyUniqueUserEmail(email: String) : Promise<any> {
-        const sponsor = services.getModel(services.SPONSOR_MODEL_NAME);
+        const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
         return sponsor.findOne({useremail: email})
             .then(doc =>  {
                 return (doc === null)? 
@@ -276,7 +276,7 @@ export class SecurityService {
 
     publishWebAPI(app: Application) : void {
         let jsonBodyParser = bodyParser.json({type: 'application/json'});
-        let jsonResponse = new services.JsonResponse();
+        let jsonResponse = new CoreServices.JsonResponse();
         
         let db = new SecurityDb();
         let generate = new Generate();
@@ -395,7 +395,7 @@ export class SecurityService {
             res.status(200);
 
             try {            
-                var model = services.getModel(services.SPONSOR_MODEL_NAME);
+                var model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
                 var sponsor = new model(item);
                 
                 await sponsor.save();

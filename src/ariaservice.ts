@@ -1,6 +1,6 @@
 import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
-import * as services from "./services";
+import {CoreServices} from "rescueshelter.core";
 
 /**
  * Localization of static content
@@ -15,8 +15,8 @@ import * as services from "./services";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
-services.createMongooseModel("aria", 
-    services.createMongooseSchema({
+CoreServices.createMongooseModel("aria", 
+    CoreServices.createMongooseSchema({
         lang: {type: String, required: true},
         route: {type: String, required: true},
         labels: {type: Object, required: true}
@@ -28,7 +28,7 @@ export class AriaService {
 
     publishWebAPI(app: Application) : void {
         let jsonParser = bodyParser.json();
-        let jsonResponse = new services.JsonResponse();
+        let jsonResponse = new CoreServices.JsonResponse();
 
 
         async function stub(req,res) {

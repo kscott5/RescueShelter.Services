@@ -1,6 +1,6 @@
 import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
-import * as services from "./services";
+import {CoreServices} from "rescueshelter.core";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -10,7 +10,7 @@ class SponsorDb {
 
     constructor() {
         this.__selectionFields =  "_id useremail username firstname lastname photo audit";
-        this.model = services.getModel(services.SPONSOR_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
     }
 
     async newSponsor(item: any) : Promise<any> {
@@ -25,7 +25,7 @@ class SponsorDb {
         
         sponsor["audit"].push({modified: new Date(), sponsor_id: sponsor._id});
 
-        var options = services.createFindOneAndUpdateOptions();
+        var options = CoreServices.createFindOneAndUpdateOptions();
         
         var data = await this.model.findOneAndUpdate({_id: sponsor._id}, sponsor, options);
         return data;
@@ -37,7 +37,7 @@ export class SponsorService {
 
     publishWebAPI(app: Application) : void {
         let jsonBodyParser = bodyParser.json({type: 'application/json'});
-        let jsonResponse = new services.JsonResponse();
+        let jsonResponse = new CoreServices.JsonResponse();
 
         let db = new SponsorDb();
 

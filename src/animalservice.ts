@@ -1,7 +1,7 @@
 import {Application, Router}  from "express";
 import * as bodyParser from "body-parser";
-import * as services from "./services";
-import {SecurityService, SecurityDb} from "./securityservice";
+import {CoreServices} from "rescueshelter.core";
+import {SecurityDb} from "./securityservice";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -11,7 +11,7 @@ class AnimalManagerDb {
 
     constructor() {
         this.__selectionFields = '_id name description imageSrc sponsors';
-        this.model = services.getModel(services.ANIMAL_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.ANIMAL_MODEL_NAME);
     } // end constructor
 
     async newAnimal(item: any) : Promise<any> {
@@ -24,7 +24,7 @@ class AnimalManagerDb {
     async saveAnimal(item: any) : Promise<any> {
         var animal = new this.model(item);
 
-        var options = services.createFindOneAndUpdateOptions();
+        var options = CoreServices.createFindOneAndUpdateOptions();
         var data = await this.model.findOneAndUpdate({_id: animal._id}, animal, options)
         return data["value"];
     }
@@ -39,7 +39,7 @@ export class AnimalService {
     publishWebAPI(app: Application) : void {
         // Parser for various different custom JSON types as JSON
         let jsonBodyParser = bodyParser.json({type: 'application/json'});
-        let jsonResponse = new services.JsonResponse();            
+        let jsonResponse = new CoreServices.JsonResponse();            
 
         let db = new AnimalManagerDb();
         let securityDb = new SecurityDb();

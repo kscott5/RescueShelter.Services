@@ -1,16 +1,11 @@
-import services = require( "./server");
+import {CoreServer} from "rescueshelter.core";
 import {AriaService} from "./ariaservice";
 import {AnimalService} from "./animalservice";
 import {SponsorService} from "./sponsorservice";
 import {SecurityService} from "./securityservice";
 
-services.serverName = 'Rescure Shelter Services';
-services.serverPort = 3302;
 
-services.middleware = [
-    new AnimalService().publishWebAPI,    
+CoreServer.start('Rescue Shelter Services Server', 3303, [
+    new AnimalService().publishWebAPI,
     new SponsorService().publishWebAPI,
-    new SecurityService().publishWebAPI
-];
-
-services.listener();
+    new SecurityService().publishWebAPI], [], "./public");
