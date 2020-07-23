@@ -5,7 +5,7 @@ import {SponsorService} from "./sponsorservice";
 import {SecurityService} from "./securityservice";
 
 
-CoreServer.start('Rescue Shelter Services Server', 3303, [
+CoreServer.start('Rescue Shelter Services Server', 3302, [
     new AnimalService().publishWebAPI,
     new SponsorService().publishWebAPI,
     new SecurityService().publishWebAPI], [], "./public");
