@@ -1,16 +1,28 @@
 # Rescue Shelter Services
 Simple express server that expose web api for Rescue Shelter [readme](https://github.com/kscott5/RescueShelter/blob/master/README.MD)
 ```
-yarn run watch
+npm or yarn run watch
 ```
 
 ```
-yarn run start
+npm or yarn run start
 ```
 
-The server should start on localhost port 3302.
-[http://localhost:3302/api/animals](http://localhost:3302/api/animals)  
+The server should start on localhost port 3302.   
+[http://localhost:3302/api/manager/animals](http://localhost:3302/api/manager/animals)   
+[http://localhost:3302/api/manager/sponsors](http://localhost:3302/api/manager/sponsors)   
+[http://localhost:3302/api/manager/secure](http://localhost:3302/api/manager/secure)    
 
+
+
+However, with nginx_dev docker instance access on port 80.   
+[http://localhost/api/manager/animal](http://localhost/api/manager/animals)   
+[http://localhost/api/manager/sponsors](http://localhost/api/manager/sponsors)     
+[http://localhost/api/manager/secure](http://localhost/api/manager/secure)   
+
+
+
+## For more details and sample data, review [RescueShelter.Reports README.MD](https://github.com/kscott5/RescueShelter.Reports/blob/master/README.md)  
 
 ## [MongoDB](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/index.html) & [Robo3t](https://www.robomongo.org/)
 Join collections with MongoDB aggregate function  
