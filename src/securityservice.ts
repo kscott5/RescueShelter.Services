@@ -1,6 +1,7 @@
-import {Application, Router} from "express";
+import {Application, NextFunction, Request, Response, Router} from "express";
 import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
+import {RedisClient} from "redis";
 import {CoreServices} from "rescueshelter.core";
 import * as blake2 from "blake2";
 
@@ -281,6 +282,40 @@ export class SecurityService {
         let db = new SecurityDb();
         let generate = new Generate();
         
+        try {
+            (new RedisClient({host: 'localhost', port: 6379}))?.quit();
+        } catch(error) {
+            console.log('**************These projects are professional entertainment***************')
+            console.log('The following command configures an out of process Redis.io memory cache.');
+            console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
+            console.log('\n');
+            console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
+            console.log('\n\n\n');
+            console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
+            console.log('set \'foo\' \'bar\''); // server response is +OK
+            console.log('get \'foo\''); // server response is $4 bar
+            console.log('quit'); //exit telnet sessions
+        }
+    
+        async function validateAccessToken(req: Request, res: Response, next: NextFunction) {
+            // var client: RedisClient;
+            // try {
+            //     client = new RedisClient({host: 'localhost', port: 6379});
+    
+            //     if(client.exists(req.params.id) === true) {
+            //         next();
+            //     }
+            // } catch(error) {            
+            //     res.json(jsonResponse.createError(error));
+            // } finally {
+            //     client?.quit();
+            // }
+
+            next();
+        }
+        
+        app.use(validateAccessToken);
+
         router.post("/unique/sponsor", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
