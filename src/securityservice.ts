@@ -7,7 +7,7 @@ import * as blake2 from "blake2";
 
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
 
-let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 const client = redis.createClient({});
 
