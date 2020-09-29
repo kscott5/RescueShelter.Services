@@ -1,13 +1,26 @@
-import {Application, NextFunction, Request, Response, Router} from "express";
+import * as express from "express";
 import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
-import {RedisClient} from "redis";
+import * as redis from "redis";
 import {CoreServices} from "rescueshelter.core";
 import * as blake2 from "blake2";
 
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+
+const client = redis.createClient({});
+
+console.log('**************These projects are professional entertainment***************')
+console.log('The following command configures an out of process Redis.io memory cache.');
+console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
+console.log('\n');
+console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
+console.log('\n\n\n');
+console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
+console.log('set \'foo\' \'bar\''); // server response is +OK
+console.log('get \'foo\''); // server response is $4 bar
+console.log('quit'); //exit telnet sessions
 
 class Track {
     private model;
@@ -73,35 +86,6 @@ class Generate {
         const encryptedHashData = hash.digest('hex')
         return encryptedHashData;
     }
-
-
-    /**
-     * 
-     * @param doc authenicate sponor was ok
-     */
-    private hashId(doc: any) : Promise<any> {
-        if(!doc)
-            return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
-
-        var now = new Date();
-        var expires = new Date(now.getTime()+SESSION_TIME);
-
-        var useremail = doc.useremail;
-        console.debug(`generateHashId with ${useremail}`);
-        
-        var hashid = this.encryptedData(useremail, `${useremail} hash salt ${expires.getTime()}`);
-
-        var tokenModel = this.model;
-        var update = new tokenModel({useremail: useremail, hashid: hashid, expires: expires.getTime()});
-
-        var options = CoreServices.createFindOneAndUpdateOptions({_id: false, hashid: 1, expiration: 1}, true);
-        return tokenModel.findOneAndUpdate({useremail: useremail}, update, options)
-            .then(product => {return product["value"]} )
-            .catch(err => {
-                console.log(err);
-                return Promise.reject(CoreServices.SYSTEM_UNAVAILABLE_MSG);
-            });
-    } // end hashId
 } // end Generate
 
 export class SecurityDb {
@@ -111,14 +95,16 @@ export class SecurityDb {
     
     constructor() {
         this.__authSelectionFields = "_id useremail username firstname lastname photo audit";    
-    
         this.generate = new Generate();
 
         this.model = CoreServices.getModel(CoreServices.SECURITY_MODEL_NAME);
     } // end constructor
 
-    deauthenticate(hashid: String, useremail: String) : Promise<any> { 
-        return this.model.findOneAndRemove({hashid: hashid, useremail: useremail});
+    deauthenticate(access_token: String, useremail: String) : Promise<any> { 
+        client.del(access_token.toString(), (error,reply) => {
+            console.debug(`${useremail} Redis `);
+        });
+        return this.model.findOneAndRemove({access_token: access_token, useremail: useremail});
     } 
 
     authenticate(useremail: String, password: String) : Promise<any> {
@@ -130,8 +116,8 @@ export class SecurityDb {
         const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
         return sponsor.aggregate([
             {
-                $lookup: { // left outer join on sponsor. token exists and valid
-                    from: "tokens",
+                $lookup: { // left outer join on sponsor. access_token exists and valid
+                    from: "oauth",
                     let: {sponsors_useremail: '$useremail'},
                     pipeline: [
                         {
@@ -146,12 +132,12 @@ export class SecurityDb {
                         },
                         {                    
                             $project: {
-                                _id: false, hashid: 1, useremail: 1, expires: 1, 
+                                _id: false, access_token: 1, useremail: 1, expires: 1, 
                                 expired: { $not: {$gt: ['$expires', now.getTime()] } }
                             }
                         }
                     ],
-                    as: "token"
+                    as: "oauth"
                 }        
             },
             {
@@ -159,7 +145,7 @@ export class SecurityDb {
             },
             {
             $project: {
-                firstname: 1, lastname: 1, useremail: 1, username: 1, token: '$token'
+                firstname: 1, lastname: 1, useremail: 1, username: 1, oauth: '$oauth'
             }}
         ])
         .limit(1)
@@ -167,19 +153,25 @@ export class SecurityDb {
             if(doc.length === 0)
                 return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
 
+            // *********************************************
+            // NOTE: Use Case ValidateAccessMiddleware
+            // *********************************************
             var sponsor = doc[0];                    
-            if(sponsor.token.length === 1) { // session exists                        
-                var token = sponsor.token[0]; 
-                if(token.expired) 
+            if(sponsor.oauth.length === 1) { // session exists                        
+                var oauth = sponsor.oauth[0]; 
+                if(oauth.expired) 
                     return Promise.reject(CoreServices.SYSTEM_SESSION_EXPIRED);
 
-                sponsor.token = null;
-                return Promise.resolve({hashid: token.hashid, sponsor: sponsor});
-            } else { // session !exists                
-                return Promise.resolve(this.generate.hashId(sponsor)).then(data => {
-                    return Promise.resolve({hashid: data._doc.hashid /* find alternative */, sponsor: sponsor})});
+                sponsor.authorization = null;
+                return Promise.resolve({access_token: oauth.access_token, sponsor: sponsor});
+            } else { // session does not exists                
+                return Promise.resolve(this.generate.access_token(sponsor)).then(data => {
+                    return Promise.resolve({ouath: data._doc.ouath /* find alternative */, sponsor: sponsor})});
                 
             }
+            // *********************************************
+            // NOTE: Above Use Case ValidateAccessMiddleware
+            // *********************************************
         });        
     } // end authenticate
 
@@ -201,8 +193,8 @@ export class SecurityDb {
                 case "not required"  || 0:
                     return Promise.resolve(true);
 
-                case "hashid" || 1:
-                    return this.verifyHash(access.hashid, access.useremail);
+                case "access_token" || 1:
+                    return this.verifyAccessToken(access.access_token, access.useremail);
 
                 case "useremail" || 2:
                     return this.verifyUniqueUserEmail(access.useremail);
@@ -225,10 +217,10 @@ export class SecurityDb {
         }
     } // end verifyAccess
 
-    private verifyHash(hashid: String, useremail: String) : Promise<any> { 
-        console.debug(`verify ${useremail} hash id ${hashid}`);
+    private verifyAccessToken(access_token: String, useremail: String) : Promise<any> { 
+        console.debug(`verify ${useremail} oauth acccess_token ${access_token}`);
 
-        return this.model.findOne({hashid: hashid, useremail: useremail})
+        return this.model.findOne({access_token: access_token, useremail: useremail})
             .then(doc => {
                 return (doc !== null)? 
                 Promise.resolve({verified: true}) :
@@ -275,29 +267,18 @@ export class SecurityService {
 
     constructor(){}
 
-    publishWebAPI(app: Application) : void {
+    publishWebAPI(app: express.Application) : void {
         let jsonBodyParser = bodyParser.json({type: 'application/json'});
         let jsonResponse = new CoreServices.JsonResponse();
         
         let db = new SecurityDb();
         let generate = new Generate();
-        
-        try {
-            (new RedisClient({host: 'localhost', port: 6379}))?.quit();
-        } catch(error) {
-            console.log('**************These projects are professional entertainment***************')
-            console.log('The following command configures an out of process Redis.io memory cache.');
-            console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
-            console.log('\n');
-            console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
-            console.log('\n\n\n');
-            console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
-            console.log('set \'foo\' \'bar\''); // server response is +OK
-            console.log('get \'foo\''); // server response is $4 bar
-            console.log('quit'); //exit telnet sessions
-        }
-    
-        async function validateAccessToken(req: Request, res: Response, next: NextFunction) {
+
+        const SECURITY_ROUTER_BASE_URL = '/api/manage/secure';
+
+        async function validateAccessToken(req: express.Request, res: express.Response, next: express.NextFunction) {
+            var body = JSON.parse(req.body||'');
+            
             // var client: RedisClient;
             // try {
             //     client = new RedisClient({host: 'localhost', port: 6379});
@@ -352,15 +333,15 @@ export class SecurityService {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
-            var hashid = req.body.hashid;
+            var access_token = req.body.access_token;
             var useremail = req.body.useremail;
 
-            if(!hashid || !useremail) {
+            if(!access_token || !useremail) {
                 res.json(jsonResponse.createError("HttpPOST body not available with request"));
             }
 
             try {
-                var data = db.verifyAccess({accessType: 'hashid', hashid: hashid, useremail: useremail});
+                var data = db.verifyAccess({accessType: 'access_token', access_token: access_token, useremail: useremail});
                 res.json(jsonResponse.createData(data));
             } catch(error) {
                 res.json(jsonResponse.createError(error));
@@ -371,15 +352,15 @@ export class SecurityService {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
-            var hashid = req.body.hashid;
+            var access_token = req.body.access_token;
             var useremail = req.body.useremail;
 
-            if(!hashid || !useremail) {
+            if(!access_token || !useremail) {
                 res.json(jsonResponse.createError("HttpPOST body is not available."));
             }
 
             try {
-            var data = await db.deauthenticate(hashid, useremail);
+            var data = await db.deauthenticate(access_token, useremail);
                 res.json(jsonResponse.createData(data));
             } catch(error) {
                 res.json(jsonResponse.createError(error));
@@ -442,6 +423,7 @@ export class SecurityService {
             }
         }); // end /registration
 
-        app.use('/api/manage/secure', router);
+        // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
+        app.use(SECURITY_ROUTER_BASE_URL.concat('/'), router);
     } // end publishWebAPI
 } // end SecurityService
