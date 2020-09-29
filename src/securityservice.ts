@@ -117,7 +117,7 @@ export class SecurityDb {
         return sponsor.aggregate([
             {
                 $lookup: { // left outer join on sponsor. access_token exists and valid
-                    from: "oauth",
+                    from: "tokens",
                     let: {sponsors_useremail: '$useremail'},
                     pipeline: [
                         {
