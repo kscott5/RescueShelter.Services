@@ -11,17 +11,17 @@ let router = express.Router({ caseSensitive: true, mergeParams: true, strict: tr
 
 const client = redis.createClient({});
 
-console.log('**************These projects are professional entertainment***************')
+console.log('\n**************These projects are professional entertainment***************')
 console.log('The following command configures an out of process Redis.io memory cache.');
 console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
-console.log('\n');
+console.log('');
 console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
-console.log('\n\n\n');
+console.log('');
 console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
 console.log('set \'foo\' \'bar\''); // server response is +OK
 console.log('get \'foo\''); // server response is $4 bar
 console.log('quit'); //exit telnet sessions
-
+console.log('****************************************************************************\n')
 class Track {
     private model;
     constructor() {
@@ -274,32 +274,50 @@ export class SecurityService {
         let db = new SecurityDb();
         let generate = new Generate();
 
-        const SECURITY_ROUTER_BASE_URL = '/api/manage/secure';
+        const SECURE_ROUTER_BASE_URL = '/api/manage/secure';
 
-        async function validateAccessToken(req: express.Request, res: express.Response, next: express.NextFunction) {
-            var body = JSON.parse(req.body||'');
-            
-            // var client: RedisClient;
-            // try {
-            //     client = new RedisClient({host: 'localhost', port: 6379});
-    
-            //     if(client.exists(req.params.id) === true) {
-            //         next();
-            //     }
-            // } catch(error) {            
-            //     res.json(jsonResponse.createError(error));
-            // } finally {
-            //     client?.quit();
-            // }
+        async function AccessTokenMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+            if(req.originalUrl.startsWith(SECURE_ROUTER_BASE_URL) !== true) {
+                next();
+                return;
+            }
 
-            next();
-        }
+            if(req.method.toLowerCase() != 'post') {
+                let error = `${req.originalUrl} accepts request method: '\POST\' not method: \'${req.method}\'`;
+                console.debug(`AccessTokenMiddleware ${error}`);
+                res.status(200);
+                res.json(jsonResponse.createError(error));
+                return;
+            }
+
+            try { // Reading data from Redis in memory cache
+                let access_token = req.body?.access_token;
+
+                if(typeof access_token == null) {
+                    
+                }
+
+                client.get(access_token, (error,reply) => {
+                    if(reply !== null) {
+                        console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' +OK`);
+                        res.status(200);
+                        res.json(JSON.parse(reply));
+                    } else {
+                        console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' ${(error || 'not available')}`);                      
+                        next();
+                    }
+                });
+            } catch(error) { // Redis cache access  
+                console.debug(error);
+                next();
+            } // try-catch    
+        } // end AccessTokenMiddleware
         
-        app.use(validateAccessToken);
+        app.use(AccessTokenMiddleware);
 
         router.post("/unique/sponsor", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
-            res.status(200);
+            res.status(200);SECURE_ROUTER_BASE_URL
 
             const field = req.body.field;
             const value = req.body.value;
@@ -423,7 +441,7 @@ export class SecurityService {
             }
         }); // end /registration
 
-        // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
-        app.use(SECURITY_ROUTER_BASE_URL.concat('/'), router);
+        // string.concat('/') is an express HACK. req.originalUrl.startsWith(SECURE_ROUTER_BASE_URL)
+        app.use(SECURE_ROUTER_BASE_URL.concat('/'), router);
     } // end publishWebAPI
 } // end SecurityService
