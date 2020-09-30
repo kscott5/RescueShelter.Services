@@ -1,7 +1,6 @@
 import {Application, NextFunction, Request, Response, Router}  from "express";
 import * as bodyParser from "body-parser";
 import {CoreServices} from "rescueshelter.core";
-import {SecurityDb} from "./securityservice";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -42,7 +41,6 @@ export class AnimalService {
         let jsonResponse = new CoreServices.JsonResponse();            
 
         let db = new AnimalManagerDb();
-        let securityDb = new SecurityDb();
         
         router.post("/new", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
@@ -58,10 +56,6 @@ export class AnimalService {
             }
 
             try {
-                var access = {accessType: "hashid", hashid: hashid, useremail: useremail};
-                var auth = await securityDb.verifyAccess(access);
-                
-
                 var data = await db.newAnimal(req.body);
                 res.json(jsonResponse.createData(data));
             } catch(error) { 
@@ -74,7 +68,6 @@ export class AnimalService {
             console.debug(`POST [:id] update ${req.url}`);
 
             var id = req.params.id;
-            var hashid = req.body.hashid;
             var useremail = req.body.useremail;
             var animal = req.body.animal;
             
@@ -85,9 +78,6 @@ export class AnimalService {
             }
             
             try {
-                var access = {accessType: "hashid", hashid: hashid, useremail: useremail};
-                var auth = await securityDb.verifyAccess(access);
-
                 var data = await db.saveAnimal(animal);
                 res.json(jsonResponse.createData(data));
             } catch(error) {
