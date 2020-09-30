@@ -240,7 +240,7 @@ export class SecurityService {
                 }
 
                 let remoteIpAddr = req.connection?.remoteAddress;
-                cacheClient.get(access_token, (error,reply) => {
+                cacheClient.get(access_token, (error,reply) => {                    
                     if(reply !== null) {
                         console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' +OK`);
                         res.status(200);
@@ -292,16 +292,20 @@ export class SecurityService {
 
         router.post("/deauth", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
-            res.status(200);
 
-            var access_token = req.body.access_token;
-            var useremail = req.body.useremail;
-            var remoteIpAddr = req.connection?.remoteAddress;
+            try {
+                var access_token = req.body?.access_token;
+                var useremail = req.body?.useremail;
+                var remoteIpAddr = req.connection?.remoteAddress;
 
-            if(!access_token || !useremail) {
-                res.json(jsonResponse.createError("HttpPOST body is not available."));
+                cacheClient.get(access_token) === true;
+                cacheClient.del(access_token) === true;                
+            } catch(error) {
+                console.debug(error);
             }
 
+            res.location("/");
+            res.redirect("/");
         });
 
         /**
