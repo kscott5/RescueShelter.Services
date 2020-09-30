@@ -10,9 +10,10 @@ export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
 export const MANAGE_BASE_ROUTER_URL = '/api/manage';
 export const MANAGE_ACCEPTABLE_HTTP_VERBS = ['POST'];
 
-let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
+const ACCESS_TOKEN_EXPIRATION = 60 /*seconds*/*5; // Five minutes
 
-const redisClient = redis.createClient({});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
+let cacheClient = redis.createClient({});
 
 console.log('\n**************These projects are professional entertainment***************')
 console.log('The following command configures an out of process Redis.io memory cache.');
@@ -93,88 +94,36 @@ class Generate {
 
 export class SecurityDb {
     private __authSelectionFields;
-    private generate;
     private model;
     
     constructor() {
         this.__authSelectionFields = "_id useremail username firstname lastname photo audit";    
-        this.generate = new Generate();
 
         this.model = CoreServices.getModel(CoreServices.SECURITY_MODEL_NAME);
     } // end constructor
 
     deauthenticate(access_token: String, useremail: String) : Promise<any> { 
-        redisClient.del(access_token.toString(), (error,reply) => {
-            console.debug(`${useremail} Redis `);
-        });
         return this.model.findOneAndRemove({access_token: access_token, useremail: useremail});
     } 
 
-    authenticate(useremail: String, password: String) : Promise<any> {
-        const encryptedPassword = this.generate.encryptedData(password, useremail);
-
-        // Format improves readable and increases the Number of lines
-        const now = new Date();            
-
+    authenticate(useremail: String, encryptedPassword: String) : Promise<any> {
         const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
         return sponsor.aggregate([
-            {
-                $lookup: { // left outer join on sponsor. access_token exists and valid
-                    from: "tokens",
-                    let: {sponsors_useremail: '$useremail'},
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        {$eq: ['$useremail', '$$sponsors_useremail']},
-                                        {$eq: ['$useremail', useremail]}
-                                    ]
-                                }
-                            }
-                        },
-                        {                    
-                            $project: {
-                                _id: false, access_token: 1, useremail: 1, expires: 1, 
-                                expired: { $not: {$gt: ['$expires', now.getTime()] } }
-                            }
-                        }
-                    ],
-                    as: "token"
-                }        
-            },
             {
                 $match: { $and: [{useremail: useremail, "security.password": encryptedPassword}] }
             },
             {
             $project: {
-                firstname: 1, lastname: 1, useremail: 1, username: 1, token: '$token'
+                firstname: 1, lastname: 1, useremail: 1, username: 1
             }}
         ])
         .limit(1)
         .then(doc => {
             if(doc.length === 0)
                 return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
-
-            // *********************************************
-            // NOTE: Use Case ValidateAccessMiddleware
-            // *********************************************
-            var sponsor = doc[0];                    
-            if(sponsor.token.length === 1) { // session exists                        
-                var token = sponsor.token[0]; 
-                if(token.expired) 
-                    return Promise.reject(CoreServices.SYSTEM_SESSION_EXPIRED);
-
-                sponsor.authorization = null;
-                return Promise.resolve({access_token: token.access_token, sponsor: sponsor});
-            } else { // session does not exists                
-                return Promise.resolve(this.generate.access_token(sponsor)).then(data => {
-                    return Promise.resolve({token: data._doc.token /* find alternative */, sponsor: sponsor})});
-                
-            }
-            // *********************************************
-            // NOTE: Above Use Case ValidateAccessMiddleware
-            // *********************************************
+            
+            var sponsor = doc[0];
+            return Promise.resolve(sponsor);
         });        
     } // end authenticate
 
@@ -189,15 +138,12 @@ export class SecurityDb {
     }
 
     // https://jsfiddle.net/karegascott/wyjgsfne/
-    verifyAccess(access: any) : Promise<any> {
+    verifyAdhocData(access: any) : Promise<any> {
         try {
             var accessType = access.accessType.trim().toLowerCase() || "not required";
             switch(accessType) {
                 case "not required"  || 0:
                     return Promise.resolve(true);
-
-                case "access_token" || 1:
-                    return this.verifyAccessToken(access.access_token, access.useremail);
 
                 case "useremail" || 2:
                     return this.verifyUniqueUserEmail(access.useremail);
@@ -219,17 +165,6 @@ export class SecurityDb {
             return Promise.reject(error);
         }
     } // end verifyAccess
-
-    private verifyAccessToken(access_token: String, useremail: String, remoteIpAddr: String = '') : Promise<any> { 
-        console.debug(`verify ${useremail} access_token ${access_token}`);
-
-        return this.model.findOne({access_token: access_token, useremail: useremail})
-            .then(doc => {
-                return (doc !== null)? 
-                Promise.resolve({verified: true}) :
-                Promise.reject({verified: false});
-            });
-    }
 
     private verifyUniqueUserField(field: String, value: String) : Promise<any> {
         switch(field.trim().toLowerCase()) {
@@ -305,7 +240,7 @@ export class SecurityService {
                 }
 
                 let remoteIpAddr = req.connection?.remoteAddress;
-                redisClient.get(access_token, (error,reply) => {
+                cacheClient.get(access_token, (error,reply) => {
                     if(reply !== null) {
                         console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' +OK`);
                         res.status(200);
@@ -334,7 +269,7 @@ export class SecurityService {
             }
 
             try {
-                var data = await db.verifyAccess({accessType: field, field: value});
+                var data = await db.verifyAdhocData({accessType: field, field: value});
                 res.json(jsonResponse.createData(data));
             } catch(error) {
                 res.json(jsonResponse.createError(error));
@@ -355,42 +290,18 @@ export class SecurityService {
             res.json(jsonResponse.createData(generate.encryptedData(data,secret)));
         });
 
-        router.post("/verify", jsonBodyParser, async (req,res) => {
-            console.debug(`POST: ${req.url}`);
-            res.status(200);
-
-            var access_token = req.body.access_token;
-            var useremail = req.body.useremail;
-
-            if(!access_token || !useremail) {
-                res.json(jsonResponse.createError("HttpPOST body not available with request"));
-            }
-
-            try {
-                var data = db.verifyAccess({accessType: 'access_token', access_token: access_token, useremail: useremail});
-                res.json(jsonResponse.createData(data));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
-        }); // end /verify
-
         router.post("/deauth", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
             var access_token = req.body.access_token;
             var useremail = req.body.useremail;
+            var remoteIpAddr = req.connection?.remoteAddress;
 
             if(!access_token || !useremail) {
                 res.json(jsonResponse.createError("HttpPOST body is not available."));
             }
 
-            try {
-            var data = await db.deauthenticate(access_token, useremail);
-                res.json(jsonResponse.createData(data));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
         });
 
         /**
@@ -408,8 +319,20 @@ export class SecurityService {
             }
 
             try {
-                var data = await db.authenticate(useremail, password);
-                res.json(jsonResponse.createData(data));
+                const encryptedPassword = generate.encryptedData(password, useremail);
+                var sponsor = await db.authenticate(useremail, encryptedPassword);
+                
+                const accessToken = generate.encryptedData(`${useremail}+${req.connection?.remoteAddress}`);
+                const accessData = { 
+                    useremail: useremail, 
+                    remoteIpAddress: req.connection?.remoteAddress, 
+                    scopes: 'Array of not available' // ex. sponsor.security.scopes
+                };
+
+                cacheClient.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
+                cacheClient.expire(accessToken, ACCESS_TOKEN_EXPIRATION);
+
+                res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
             } catch(error) {
                 res.json(jsonResponse.createError(error));
             };
@@ -433,18 +356,16 @@ export class SecurityService {
 
             item.security = generate.security(useremail, password, questions);
 
-            // create the new sponsor with security
-            res.status(200);
-
-            try {            
+            try {
                 var model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
                 var sponsor = new model(item);
                 
                 await sponsor.save();
 
-                var auth = await db.authenticate(useremail, password);
-                res.json(jsonResponse.createData(auth))            
+                res.location('/auth');
+                res.redirect('/auth');                
             } catch(error) {
+                res.status(200);
                 res.json(jsonResponse.createError(error))
             }
         }); // end /registration
