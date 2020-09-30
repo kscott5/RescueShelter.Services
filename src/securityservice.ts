@@ -294,7 +294,7 @@ export class SecurityService {
                 let access_token = req.body?.access_token;
 
                 if(access_token == undefined) {
-                    let error = `missing request.body: '${JSON.stringify({access_token: 'value'})}'`;
+                    let error = `missing request.body: \'{access_token\': \'value\'}'`;
                     console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
                     res.status(200);
                     res.json(jsonResponse.createError(error));
