@@ -8,10 +8,11 @@ import * as blake2 from "blake2";
 // Create CoreServices application specific constants
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
 export const MANAGE_BASE_ROUTER_URL = '/api/manage';
+export const MANAGE_ACCEPTABLE_HTTP_VERBS = ['POST'];
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
-const client = redis.createClient({});
+const redisClient = redis.createClient({});
 
 console.log('\n**************These projects are professional entertainment***************')
 console.log('The following command configures an out of process Redis.io memory cache.');
@@ -103,7 +104,7 @@ export class SecurityDb {
     } // end constructor
 
     deauthenticate(access_token: String, useremail: String) : Promise<any> { 
-        client.del(access_token.toString(), (error,reply) => {
+        redisClient.del(access_token.toString(), (error,reply) => {
             console.debug(`${useremail} Redis `);
         });
         return this.model.findOneAndRemove({access_token: access_token, useremail: useremail});
@@ -139,7 +140,7 @@ export class SecurityDb {
                             }
                         }
                     ],
-                    as: "oauth"
+                    as: "token"
                 }        
             },
             {
@@ -147,7 +148,7 @@ export class SecurityDb {
             },
             {
             $project: {
-                firstname: 1, lastname: 1, useremail: 1, username: 1, oauth: '$oauth'
+                firstname: 1, lastname: 1, useremail: 1, username: 1, token: '$token'
             }}
         ])
         .limit(1)
@@ -159,16 +160,16 @@ export class SecurityDb {
             // NOTE: Use Case ValidateAccessMiddleware
             // *********************************************
             var sponsor = doc[0];                    
-            if(sponsor.oauth.length === 1) { // session exists                        
-                var oauth = sponsor.oauth[0]; 
-                if(oauth.expired) 
+            if(sponsor.token.length === 1) { // session exists                        
+                var token = sponsor.token[0]; 
+                if(token.expired) 
                     return Promise.reject(CoreServices.SYSTEM_SESSION_EXPIRED);
 
                 sponsor.authorization = null;
-                return Promise.resolve({access_token: oauth.access_token, sponsor: sponsor});
+                return Promise.resolve({access_token: token.access_token, sponsor: sponsor});
             } else { // session does not exists                
                 return Promise.resolve(this.generate.access_token(sponsor)).then(data => {
-                    return Promise.resolve({ouath: data._doc.ouath /* find alternative */, sponsor: sponsor})});
+                    return Promise.resolve({token: data._doc.token /* find alternative */, sponsor: sponsor})});
                 
             }
             // *********************************************
@@ -219,8 +220,8 @@ export class SecurityDb {
         }
     } // end verifyAccess
 
-    private verifyAccessToken(access_token: String, useremail: String) : Promise<any> { 
-        console.debug(`verify ${useremail} oauth acccess_token ${access_token}`);
+    private verifyAccessToken(access_token: String, useremail: String, remoteIpAddr: String = '') : Promise<any> { 
+        console.debug(`verify ${useremail} access_token ${access_token}`);
 
         return this.model.findOne({access_token: access_token, useremail: useremail})
             .then(doc => {
@@ -285,8 +286,8 @@ export class SecurityService {
                 return;
             }
 
-            if(req.method.toLowerCase() != 'post') {
-                let error = `accepts request method: '\POST\' not method: \'${req.method}\'`;
+            if(MANAGE_ACCEPTABLE_HTTP_VERBS.indexOf(req.method.toUpperCase()) === -1) {
+                let error = `request.method: \'${req.method}\' not available.`;
                 console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
                 res.status(200);
                 res.json(jsonResponse.createError(error));
@@ -295,7 +296,6 @@ export class SecurityService {
 
             try { // Reading data from Redis in memory cache
                 let access_token = req.body?.access_token;
-
                 if(access_token == undefined) {
                     let error = `missing request.body: \'{access_token\': \'value\'}'`;
                     console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
@@ -304,7 +304,8 @@ export class SecurityService {
                     return;                        
                 }
 
-                client.get(access_token, (error,reply) => {
+                let remoteIpAddr = req.connection?.remoteAddress;
+                redisClient.get(access_token, (error,reply) => {
                     if(reply !== null) {
                         console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' +OK`);
                         res.status(200);
