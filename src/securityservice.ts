@@ -201,8 +201,7 @@ export class SecurityDb {
     }
 } // end SecurityDb
 
-export class SecurityService {
-    
+export class SecurityService {    
     constructor(){}
 
     publishWebAPI(app: express.Application) : void {
@@ -213,10 +212,8 @@ export class SecurityService {
         let generate = new Generate();
 
         async function AccessTokenMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-            if(req.originalUrl.startsWith(MANAGE_BASE_ROUTER_URL) !== true || 
-                req.originalUrl.endsWith('/auth') === true || 
-                req.originalUrl.endsWith('/deauth') === true || 
-                req.originalUrl.endsWith('/registration') === true) {
+            const endsWith =  /(\/(auth|data|deauth|registration))$/;
+            if(req.originalUrl.startsWith(MANAGE_BASE_ROUTER_URL) !== true || endsWith.test(req.originalUrl) === true) {
                 next(); // middleware handler
                 return;
             }
@@ -362,12 +359,12 @@ export class SecurityService {
 
             try {
                 var model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
-                var sponsor = new model(item);
-                
+            
+                var sponsor = new model(item);                
                 await sponsor.save();
 
                 res.location('/auth');
-                res.redirect('/auth');                
+                res.redirect('/auth');  
             } catch(error) {
                 res.status(200);
                 res.json(jsonResponse.createError(error))
