@@ -25,7 +25,24 @@ console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
 console.log('set \'foo\' \'bar\''); // server response is +OK
 console.log('get \'foo\''); // server response is $4 bar
 console.log('quit'); //exit telnet sessions
-console.log('****************************************************************************\n')
+console.log('****************************************************************************\n');
+
+(async () => {
+    console.debug(`cacheAllUserEmails -> Cache All User Emails with DSN Key`);
+
+    try {
+        var model = CoreServices.getModel(CoreServices.SPONORS_MODEL_NAME);
+        var data = await model.find({}, {'useremail': 1});
+
+        if(data.length > 0) {
+            cacheClient.set('UserEmailByDNS', JSON.stringify(data));
+            cacheClient.expire('UserEmailByDNS', ACCESS_TOKEN_EXPIRATION);
+        }
+    } catch(error)  {
+        console.debug(`cacheAllUserEmails error: ${error}`);
+    }
+})();
+
 class Track {
     private model;
     constructor() {
