@@ -283,8 +283,8 @@ export class SecurityService {
             }
 
             if(req.method.toLowerCase() != 'post') {
-                let error = `${req.originalUrl} accepts request method: '\POST\' not method: \'${req.method}\'`;
-                console.debug(`AccessTokenMiddleware ${error}`);
+                let error = `accepts request method: '\POST\' not method: \'${req.method}\'`;
+                console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
                 res.status(200);
                 res.json(jsonResponse.createError(error));
                 return;
@@ -293,8 +293,13 @@ export class SecurityService {
             try { // Reading data from Redis in memory cache
                 let access_token = req.body?.access_token;
 
-                if(typeof access_token == null) {
-                    
+                if(access_token == undefined) {
+                    let error = `missing request.body: '${JSON.stringify({access_token: 'value'})}'`;
+                    console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
+                    res.status(200);
+                    res.json(jsonResponse.createError(error));
+                    return;
+                        
                 }
 
                 client.get(access_token, (error,reply) => {
