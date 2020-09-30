@@ -5,7 +5,9 @@ import * as redis from "redis";
 import {CoreServices} from "rescueshelter.core";
 import * as blake2 from "blake2";
 
+// Create CoreServices application specific constants
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
+export const MANAGE_BASE_ROUTER_URL = '/api/manage';
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -264,7 +266,7 @@ export class SecurityDb {
 } // end SecurityDb
 
 export class SecurityService {
-
+    
     constructor(){}
 
     publishWebAPI(app: express.Application) : void {
@@ -274,11 +276,12 @@ export class SecurityService {
         let db = new SecurityDb();
         let generate = new Generate();
 
-        const SECURE_ROUTER_BASE_URL = '/api/manage/secure';
-
         async function AccessTokenMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-            if(req.originalUrl.startsWith(SECURE_ROUTER_BASE_URL) !== true) {
-                next();
+            if(req.originalUrl.startsWith(MANAGE_BASE_ROUTER_URL) !== true || 
+                req.originalUrl.endsWith('/auth') === true || 
+                req.originalUrl.endsWith('/deauth') === true || 
+                req.originalUrl.endsWith('/registration') === true) {
+                next(); // middleware handler
                 return;
             }
 
@@ -298,8 +301,7 @@ export class SecurityService {
                     console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
                     res.status(200);
                     res.json(jsonResponse.createError(error));
-                    return;
-                        
+                    return;                        
                 }
 
                 client.get(access_token, (error,reply) => {
@@ -322,7 +324,7 @@ export class SecurityService {
 
         router.post("/unique/sponsor", jsonBodyParser, async (req,res) => {
             console.debug(`POST: ${req.url}`);
-            res.status(200);SECURE_ROUTER_BASE_URL
+            res.status(200);
 
             const field = req.body.field;
             const value = req.body.value;
@@ -446,7 +448,6 @@ export class SecurityService {
             }
         }); // end /registration
 
-        // string.concat('/') is an express HACK. req.originalUrl.startsWith(SECURE_ROUTER_BASE_URL)
-        app.use(SECURE_ROUTER_BASE_URL.concat('/'), router);
+        app.use('/api/manage/secure/', router);
     } // end publishWebAPI
 } // end SecurityService
