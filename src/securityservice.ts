@@ -154,6 +154,14 @@ export class SecurityDb {
         return this.model.findOneAndUpdate({useremail: useremail}, {$set: {security: securityModel}}, options);
     }
 
+    /**
+     * @description Determines if a value is available or unique
+     * @param access object {
+     *     accessType: string [useremail|username],
+     *     useremail: string,                       
+     *     username: string
+     * }
+     */
     // https://jsfiddle.net/karegascott/wyjgsfne/
     verifyAdhocData(access: any) : Promise<any> {
         try {
@@ -167,10 +175,7 @@ export class SecurityDb {
                 
                 case "username" || 3:
                     return this.verifyUniqueUserName(access.username);
-
-                case "uniqueuserfield" || 4:
-                    return this.verifyUniqueUserField(access.field, access.value);
-                    
+                
                 default:
                     console.debug(`Access Type: ${accessType} not valid`);
                     return Promise.resolve(false);
@@ -183,22 +188,9 @@ export class SecurityDb {
         }
     } // end verifyAccess
 
-    private verifyUniqueUserField(field: String, value: String) : Promise<any> {
-        switch(field.trim().toLowerCase()) {
-            case "username":
-                return this.verifyUniqueUserName(value);
-
-            case "useremail":
-                return this.verifyUniqueUserEmail(value);
-
-            default:
-                console.log(`${field} is not a valid field`);
-                return Promise.reject({unique: false});
-        }
-    }
-
     private verifyUniqueUserName(name: String) : Promise<any> {
         const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+
         return sponsor.findOne({useremail: name})
             .then(doc => { 
                 return (doc === null)? 
@@ -372,16 +364,22 @@ export class SecurityService {
             var password = item.password;
             var questions = item.questions;
 
-            item.security = generate.security(useremail, password, questions);
-
             try {
-                var model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
-            
-                var sponsor = new model(item);                
-                await sponsor.save();
 
-                res.location('/auth');
-                res.redirect('/auth');  
+                if(await db.verifyAdhocData({accessType: 'useremail', useremail}) === true ) {
+                    item.security = generate.security(useremail, password, questions);
+
+                    var model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+                
+                    var sponsor = new model(item);                
+                    await sponsor.save();
+                    
+                    res.location('/auth');
+                    res.redirect('/auth');
+                } else {
+                    res.status(200)
+                    res.json(jsonResponse.createError(`${useremail} is not available.`));
+                }
             } catch(error) {
                 res.status(200);
                 res.json(jsonResponse.createError(error))
