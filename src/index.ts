@@ -9,4 +9,4 @@ import {SecurityService} from "./securityservice";
 CoreServer.start('Rescue Shelter Services Server', 3302, [
     new SecurityService().publishWebAPI, // Secure all routes
     new SponsorService().publishWebAPI,
-    new AnimalService().publishWebAPI], [], "./public");
+    new AnimalService().publishWebAPI], [], "../public");
