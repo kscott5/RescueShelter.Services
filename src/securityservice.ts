@@ -3,7 +3,6 @@ import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
 import * as redis from "redis";
 import {CoreServices} from "rescueshelter.core";
-import * as blake2 from "blake2";
 
 // Create CoreServices application specific constants
 export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
@@ -96,16 +95,16 @@ class Generate {
         return securityModel;
     }
 
-    encryptedData(data: String, key: String = 'Rescue Shelter: Security Question Answer') {
-        
-        const tmpData = data.trim();
-        const tmpKey = key.trim();
-    
-        const hash = blake2.createKeyedHash("blake2b", Buffer.from(tmpKey), {digestLength: 16})
-        hash.update(Buffer.from(tmpData))
+    encryptedData(data: String, secret: String = 'Rescue Shelter: Security Question Answer', algorithm: string = 'aes-192-cbc') {        
+        let key = crypto.scryptSync(secret as string, 'salt', 24);
+        let iv = crypto.randomFillSync(new Uint8Array(16));
 
-        const encryptedHashData = hash.digest('hex')
-        return encryptedHashData;
+        let cipher = crypto.createCipheriv(algorithm, key, iv);
+        
+        let encryptedData = cipher.update(data as string, 'utf8', 'hex');
+        encryptedData += cipher.final('hex');
+        
+        return encryptedData;
     }
 } // end Generate
 
