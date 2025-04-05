@@ -1,6 +1,26 @@
 import * as crypto from "node:crypto";
 import * as express from "express";
 import {CoreServices} from "rescueshelter.core";
+import { HEADER_ACCESS_TOKEN } from "./accesstoken";
+
+/**
+ * @description
+ * The data encryption, encrypted data response header
+ */
+export const HEADER_ENCRYPTED_DATA = 'RS-ENCRYPTION-DATA';
+
+function encryptData(plaintext: string, secret: string = 'Rescue Shelter Data Encypt Secret') : string {
+    let key = crypto.scryptSync(secret, 'salt', 24);
+    let iv = crypto.randomFillSync(new Uint8Array(16));
+    let algorithm: string = 'aes-192-cbc';
+
+    let cipher = crypto.createCipheriv(algorithm, key, iv);
+    
+    let encryptedData = cipher.update(plaintext, 'utf8', 'hex');
+    encryptedData += cipher.final('hex');
+
+    return encryptedData;
+}
 
 /**
  * @description 
@@ -9,6 +29,7 @@ import {CoreServices} from "rescueshelter.core";
  * 
  *      {
  *          "data|password": "plain text data (required)",
+ *          "username": "profile login identifier or name (password required!)"
  *          "secret": "plain text secret data use with cipher (optional)"
  *      }
  * 
@@ -45,16 +66,15 @@ export default async function DataEncryption(req: express.Request, res: express.
             return;
         } 
 
-        let key = crypto.scryptSync(req.body?.secret || 'Rescue Shelter Data Encypt Secret', 'salt', 24);
-        let iv = crypto.randomFillSync(new Uint8Array(16));
-        let algorithm: string = 'aes-192-cbc';
+        let encryptedData = encryptData(plaintext, req.body?.secret);
+        if(req.body?.password != null && req.body?.username != null) {
+            // create the access token
+            let accessToken = encryptData(`${req.socket?.remoteAddress}/${req.body.useremail}/${encryptedData}`);
+            res.set(HEADER_ACCESS_TOKEN, accessToken);
+        } else {
+            res.set(HEADER_ENCRYPTED_DATA, encryptedData);
+        }
 
-        let cipher = crypto.createCipheriv(algorithm, key, iv);
-        
-        let encryptedData = cipher.update(plaintext, 'utf8', 'hex');
-        encryptedData += cipher.final('hex');
-                
-        res.set("RS-ENCRYPTED-DATA", encryptedData);
         next(); 
     } catch(error) { // Redis cache access 
         res.json(jsonResponse.createError(error));

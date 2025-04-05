@@ -30,7 +30,7 @@ console.log('*******************************************************************
 
         if(data.length > 0) {
             cacheClient.set('UserEmailByDNS', JSON.stringify(data));
-            cacheClient.expire('UserEmailByDNS', Middleware.ACCESS_TOKEN_EXPIRATION);
+            cacheClient.expire('UserEmailByDNS', Middleware.AccessToken.EXPIRATION);
         }
     } catch(error)  {
         console.debug(`cacheAllUserEmails error: ${error}`);
@@ -214,9 +214,9 @@ export class SecurityService {
         let generate = new Generate();
 
         app.use(bodyParser.json({type: "application/json"}));
-        app.use(Middleware.AccessToken);
-        app.use(Middleware.DataEncryption);
-        app.use(Middleware.Authentication);
+        app.use(Middleware.AccessToken.default);
+        app.use(Middleware.DataEncryption.default);
+        app.use(Middleware.Authentication.default);
 
         router.post("/unique/sponsor", async (req,res) => {
             console.debug(`POST: ${req.url}`);
@@ -283,7 +283,7 @@ export class SecurityService {
             }
 
             try {                
-                const encryptedPassword = generate.encryptedData(password, useremail);
+                const encryptedPassword = res.get(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA)
                 var sponsor = await db.authenticate(useremail, encryptedPassword);
                 
                 const accessToken = generate.encryptedData(`${useremail}+${req.socket?.remoteAddress}`);
@@ -294,7 +294,7 @@ export class SecurityService {
                 };
 
                 cacheClient.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
-                cacheClient.expire(accessToken, Middleware.ACCESS_TOKEN_EXPIRATION);
+                cacheClient.expire(accessToken, Middleware.AccessToken.EXPIRATION);
 
                 res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
             } catch(error) {

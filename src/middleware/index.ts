@@ -1,8 +1,5 @@
-import AccessToken from "./accesstoken";
-import Authentication from "./authentication"
-import DataEncryption from "./dataencryption";
+import * as AccessToken from "./accesstoken";
+import * as Authentication from "./authentication"
+import * as DataEncryption from "./dataencryption";
 
-// Create CoreServices application specific constants
-export const ACCESS_TOKEN_EXPIRATION = 60 /*seconds*/*5; // Five minutes
-
-export {AccessToken, Authentication, DataEncryption};
+export {AccessToken, Authentication, DataEncryption };

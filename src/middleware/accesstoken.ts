@@ -3,6 +3,14 @@ import * as redis from "redis";
 import {CoreServices} from "rescueshelter.core";
 
 /**
+ * @description
+ * The access token expires after five minutes
+ */
+export const EXPIRATION = 60 /*seconds*/*5; // Five minutes
+export const HEADER_ACCESS_TOKEN = "ACCESS_TOKEN";
+
+/**
+ * @description
  * Access token secures specify express.routes and ignores
  * auth (login), deauth (logout), registration and data.
  * 
