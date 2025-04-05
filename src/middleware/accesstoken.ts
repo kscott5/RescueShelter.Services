@@ -11,10 +11,9 @@ import {CoreServices} from "rescueshelter.core";
  * @param next express.NextFunction
  * @returns  
  */
-export async function AccessToken(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const url =  /^(\/api\/manage){1,1}(\/(auth|data|deauth|registration))$/;
+export default async function AccessToken(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const url =  /(\/api\/manage\/secure\/)(auth|data|deauth|registration)$/;
     const title = "Middleware Access Token";
-
     const jsonResponse = new CoreServices.JsonResponse();
     
     // ignores these express.routes

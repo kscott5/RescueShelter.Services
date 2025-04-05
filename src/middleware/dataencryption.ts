@@ -4,11 +4,11 @@ import {CoreServices} from "rescueshelter.core";
 
 /**
  * @description 
- * Data encryption middleware encypts the request data and use of body-parser.
+ * Data encryption middleware encypts the request data.
  * The data format in req.body 
  * 
  *      {
- *          "data": "plain text data (required)",
+ *          "data|password": "plain text data (required)",
  *          "secret": "plain text secret data use with cipher (optional)"
  *      }
  * 
@@ -19,11 +19,11 @@ import {CoreServices} from "rescueshelter.core";
  * @param next express.NextFunction
  * @returns 
  */
-async function DataEncryption(req: express.Request, res: express.Response, next: express.NextFunction) {
+export default async function DataEncryption(req: express.Request, res: express.Response, next: express.NextFunction) {
     console.log("Middleware Data Encryption");
     
     const jsonResponse = new CoreServices.JsonResponse();
-    const url = /^(\/api\/manage\/secure\/data)$/
+    const url = /(\/api\/manage\/secure)\/(data|auth)$/
 
     if(url.test(req.originalUrl) == false) {
         next(); // middleware handler
@@ -38,23 +38,25 @@ async function DataEncryption(req: express.Request, res: express.Response, next:
         return;
     }
     try {
-        if(req.body?.data == null) {
-            res.json(jsonResponse.createError("HttpPOST: data not available in request body."));
+        // encrypt raw data or plain text password
+        let plaintext = req.body?.data || req.body?.password;
+        if(plaintext == null) {
+            res.json(jsonResponse.createError("HttpPOST: required fields not available in request body."));
             return;
         } 
-    
+
         let key = crypto.scryptSync(req.body?.secret || 'Rescue Shelter Data Encypt Secret', 'salt', 24);
         let iv = crypto.randomFillSync(new Uint8Array(16));
         let algorithm: string = 'aes-192-cbc';
 
         let cipher = crypto.createCipheriv(algorithm, key, iv);
         
-        let encryptedData = cipher.update(req.body.data, 'utf8', 'hex');
+        let encryptedData = cipher.update(plaintext, 'utf8', 'hex');
         encryptedData += cipher.final('hex');
-        
+                
         res.set("RS-ENCRYPTED-DATA", encryptedData);
-        next();      
+        next(); 
     } catch(error) { // Redis cache access 
         res.json(jsonResponse.createError(error));
     } // try-catch    
-} // end DataEncryptMiddleware
+} // end DataEncryption

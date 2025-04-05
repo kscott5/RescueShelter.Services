@@ -3,13 +3,7 @@ import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
 import * as redis from "redis";
 import {CoreServices} from "rescueshelter.core";
-
-// Create CoreServices application specific constants
-export const SESSION_TIME = 900000; // 15 minutes = 900000 milliseconds
-export const MANAGE_BASE_ROUTER_URL = '/api/manage';
-export const MANAGE_ACCEPTABLE_HTTP_VERBS = ['POST'];
-
-const ACCESS_TOKEN_EXPIRATION = 60 /*seconds*/*5; // Five minutes
+import * as Middleware from "./middleware";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 let cacheClient = redis.createClient({});
@@ -26,6 +20,7 @@ console.log('get \'foo\''); // server response is $4 bar
 console.log('quit'); //exit telnet sessions
 console.log('****************************************************************************\n');
 
+
 (async () => {
     console.debug(`cacheAllUserEmails -> Cache All User Emails with DSN Key`);
 
@@ -35,7 +30,7 @@ console.log('*******************************************************************
 
         if(data.length > 0) {
             cacheClient.set('UserEmailByDNS', JSON.stringify(data));
-            cacheClient.expire('UserEmailByDNS', ACCESS_TOKEN_EXPIRATION);
+            cacheClient.expire('UserEmailByDNS', Middleware.ACCESS_TOKEN_EXPIRATION);
         }
     } catch(error)  {
         console.debug(`cacheAllUserEmails error: ${error}`);
@@ -213,57 +208,17 @@ export class SecurityService {
     constructor(){}
 
     publishWebAPI(app: express.Application) : void {
-        let jsonBodyParser = bodyParser.json({type: 'application/json'});
         let jsonResponse = new CoreServices.JsonResponse();
         
         let db = new SecurityDb();
         let generate = new Generate();
 
-        async function AccessTokenMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-            const endsWith =  /(\/(auth|data|deauth|registration))$/;
-            if(req.originalUrl.startsWith(MANAGE_BASE_ROUTER_URL) !== true || endsWith.test(req.originalUrl) === true) {
-                next(); // middleware handler
-                return;
-            }
+        app.use(bodyParser.json({type: "application/json"}));
+        app.use(Middleware.AccessToken);
+        app.use(Middleware.DataEncryption);
+        app.use(Middleware.Authentication);
 
-            if(MANAGE_ACCEPTABLE_HTTP_VERBS.indexOf(req.method.toUpperCase()) === -1) {
-                let error = `request.method: \'${req.method}\' not available.`;
-                console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
-                res.status(200);
-                res.json(jsonResponse.createError(error));
-                return;
-            }
-
-            try { // Reading data from Redis in memory cache
-                let access_token = req.body?.access_token;
-                if(access_token == undefined) {
-                    let error = `missing request.body: \'{access_token\': \'value\'}'`;
-                    console.debug(`AccessTokenMiddleware ${req.originalUrl} ${error}`);
-                    res.status(200);
-                    res.json(jsonResponse.createError(error));
-                    return;                        
-                }
-
-                let remoteIpAddr = req.connection?.remoteAddress;
-                cacheClient.get(access_token, (error,reply) => {                    
-                    if(reply !== null) {
-                        console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' +OK`);
-                        res.status(200);
-                        res.json(JSON.parse(reply));
-                    } else {
-                        console.debug(`AccessTokenMiddleware ${req.originalUrl} -> get \'${access_token}\' ${(error || 'not available')}`);                      
-                        next();
-                    }
-                });
-            } catch(error) { // Redis cache access  
-                console.debug(error);
-                next();
-            } // try-catch    
-        } // end AccessTokenMiddleware
-        
-        app.use(AccessTokenMiddleware);
-
-        router.post("/unique/sponsor", jsonBodyParser, async (req,res) => {
+        router.post("/unique/sponsor", async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -281,27 +236,27 @@ export class SecurityService {
             }
         });
 
-        router.post("/data", jsonBodyParser, async (req,res) => {
+        router.post("/data", async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
-            const data = req.body.data;
-            const secret = req.body.secret;            
+            const data = req.body?.data || req.body?.password;
+            const secret = req.body?.secret || '';
 
             if(!data || !secret) {
                 res.json(jsonResponse.createError("HttpPOST: request body not available"));
             }
 
-            res.json(jsonResponse.createData(generate.encryptedData(data,secret)));
+            res.json(jsonResponse.createData("encryption done."));
         });
 
-        router.post("/deauth", jsonBodyParser, async (req,res) => {
+        router.post("/deauth", async (req,res) => {
             console.debug(`POST: ${req.url}`);
 
             try {
                 var access_token = req.body?.access_token;
                 var useremail = req.body?.useremail;
-                var remoteIpAddr = req.connection?.remoteAddress;
+                var remoteIpAddr = req.socket?.remoteAddress;
 
                 cacheClient.get(access_token) === true;
                 cacheClient.del(access_token) === true;                
@@ -316,7 +271,7 @@ export class SecurityService {
         /**
          * Authenticate the sponsor and generate app access hash id
          */
-        router.post("/auth", jsonBodyParser, async (req,res) => {
+        router.post("/auth", async (req,res) => {
             console.debug(`POST: ${req.url}`);
             res.status(200);
 
@@ -327,19 +282,19 @@ export class SecurityService {
                 res.json(jsonResponse.createError("HttpPOST: request body not available"));
             }
 
-            try {
+            try {                
                 const encryptedPassword = generate.encryptedData(password, useremail);
                 var sponsor = await db.authenticate(useremail, encryptedPassword);
                 
-                const accessToken = generate.encryptedData(`${useremail}+${req.connection?.remoteAddress}`);
+                const accessToken = generate.encryptedData(`${useremail}+${req.socket?.remoteAddress}`);
                 const accessData = { 
                     useremail: useremail, 
-                    remoteIpAddress: req.connection?.remoteAddress, 
+                    remoteIpAddress: req.socket?.remoteAddress, 
                     scopes: 'Array of not available' // ex. sponsor.security.scopes
                 };
 
                 cacheClient.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
-                cacheClient.expire(accessToken, ACCESS_TOKEN_EXPIRATION);
+                cacheClient.expire(accessToken, Middleware.ACCESS_TOKEN_EXPIRATION);
 
                 res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
             } catch(error) {
@@ -350,7 +305,7 @@ export class SecurityService {
         /**
          * Registers then authenticate new sponsor
          */
-        router.post("/registration", jsonBodyParser, async (req,res) => {
+        router.post("/registration", async (req,res) => {
             console.debug(`POST: ${req.url}`);
             if(!req.body) {
                 res.status(200);
