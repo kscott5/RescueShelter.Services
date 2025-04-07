@@ -7,7 +7,7 @@ import {CoreServices} from "rescueshelter.core";
  * The access token expires after five minutes
  */
 export const EXPIRATION = 60 /*seconds*/*5; // Five minutes
-export const HEADER_ACCESS_TOKEN = "ACCESS_TOKEN";
+export const HEADER_ACCESS_TOKEN = "Access-Token";
 
 /**
  * @description

@@ -7,14 +7,15 @@ import { HEADER_ACCESS_TOKEN } from "./accesstoken";
  * @description
  * The data encryption, encrypted data response header
  */
-export const HEADER_ENCRYPTED_DATA = 'RS-ENCRYPTION-DATA';
+export const HEADER_ENCRYPTED_DATA: string = 'RS-Encrypted-Data';
+export const ENCRYPTION_SECRET: string = 'RS Default Secret Text.';
+export const ENCRYPTION_ALGORITHM: string = 'aes-256-cbc';
 
-function encryptData(plaintext: string, secret: string = 'Rescue Shelter Data Encypt Secret') : string {
+function encryptData(plaintext: string, secret: string = ENCRYPTION_SECRET) : string {
     let key = crypto.scryptSync(secret, 'salt', 24);
-    let iv = crypto.randomFillSync(new Uint8Array(16));
-    let algorithm: string = 'aes-192-cbc';
-
-    let cipher = crypto.createCipheriv(algorithm, key, iv);
+    let iv = Uint8Array.from([191,173,60,199,43,61,43,13,54,47,28,252,36,163,161,141]);
+    
+    let cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
     
     let encryptedData = cipher.update(plaintext, 'utf8', 'hex');
     encryptedData += cipher.final('hex');
@@ -29,7 +30,7 @@ function encryptData(plaintext: string, secret: string = 'Rescue Shelter Data En
  * 
  *      {
  *          "data|password": "plain text data (required)",
- *          "username": "profile login identifier or name (password required!)"
+ *          "useremail": "profile login email address (password required!)"
  *          "secret": "plain text secret data use with cipher (optional)"
  *      }
  * 
@@ -58,24 +59,25 @@ export default async function DataEncryption(req: express.Request, res: express.
         res.json(jsonResponse.createError(error));
         return;
     }
+    
     try {
         // encrypt raw data or plain text password
         let plaintext = req.body?.data || req.body?.password;
         if(plaintext == null) {
-            res.json(jsonResponse.createError("HttpPOST: required fields not available in request body."));
+            res.json(jsonResponse.createError("required fields not available in request body."));
             return;
         } 
 
         let encryptedData = encryptData(plaintext, req.body?.secret);
-        if(req.body?.password != null && req.body?.username != null) {
+        res.set(HEADER_ENCRYPTED_DATA, encryptedData);
+
+        if(req.body?.password != null && req.body?.useremail != null) {
             // create the access token
             let accessToken = encryptData(`${req.socket?.remoteAddress}/${req.body.useremail}/${encryptedData}`);
             res.set(HEADER_ACCESS_TOKEN, accessToken);
-        } else {
-            res.set(HEADER_ENCRYPTED_DATA, encryptedData);
         }
 
-        next(); 
+        next();
     } catch(error) { // Redis cache access 
         res.json(jsonResponse.createError(error));
     } // try-catch    

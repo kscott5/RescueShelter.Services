@@ -216,10 +216,8 @@ export class SecurityService {
         app.use(bodyParser.json({type: "application/json"}));
         app.use(Middleware.AccessToken.default);
         app.use(Middleware.DataEncryption.default);
-        app.use(Middleware.Authentication.default);
 
         router.post("/unique/sponsor", async (req,res) => {
-            console.debug(`POST: ${req.url}`);
             res.status(200);
 
             const field = req.body.field;
@@ -237,22 +235,21 @@ export class SecurityService {
         });
 
         router.post("/data", async (req,res) => {
-            console.debug(`POST: ${req.url}`);
             res.status(200);
 
-            const data = req.body?.data || req.body?.password;
+            const data = req.body?.data;
             const secret = req.body?.secret || '';
 
-            if(!data || !secret) {
+            if(data == null) {
+                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
                 res.json(jsonResponse.createError("HttpPOST: request body not available"));
+                return;
             }
 
             res.json(jsonResponse.createData("encryption done."));
         });
 
         router.post("/deauth", async (req,res) => {
-            console.debug(`POST: ${req.url}`);
-
             try {
                 var access_token = req.body?.access_token;
                 var useremail = req.body?.useremail;
@@ -272,21 +269,25 @@ export class SecurityService {
          * Authenticate the sponsor and generate app access hash id
          */
         router.post("/auth", async (req,res) => {
-            console.debug(`POST: ${req.url}`);
             res.status(200);
 
-            const useremail = req.body.useremail; // either useremail or username
-            const password = req.body.password; // clear text password never saved
+            const useremail = req.body?.useremail; // either useremail or username
+            const password = req.body?.password; // clear text password never saved
 
-            if(!useremail || !password) {
-                res.json(jsonResponse.createError("HttpPOST: request body not available"));
+            if(useremail == null || password == null) {
+                res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
+                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                res.json(jsonResponse.createError("request body not available"));
+                return;
             }
 
             try {                
-                const encryptedPassword = res.get(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA)
+                const encryptedPassword = res.getHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA)+'';
+                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                
                 var sponsor = await db.authenticate(useremail, encryptedPassword);
                 
-                const accessToken = generate.encryptedData(`${useremail}+${req.socket?.remoteAddress}`);
+                const accessToken = res.getHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN)+'';
                 const accessData = { 
                     useremail: useremail, 
                     remoteIpAddress: req.socket?.remoteAddress, 
@@ -298,6 +299,9 @@ export class SecurityService {
 
                 res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
             } catch(error) {
+                res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
+                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                
                 res.json(jsonResponse.createError(error));
             };
         });
@@ -306,7 +310,6 @@ export class SecurityService {
          * Registers then authenticate new sponsor
          */
         router.post("/registration", async (req,res) => {
-            console.debug(`POST: ${req.url}`);
             if(!req.body) {
                 res.status(200);
                 res.json(jsonResponse.createError("HttpPOST json body not available"));
