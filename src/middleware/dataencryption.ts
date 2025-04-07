@@ -9,7 +9,7 @@ import { HEADER_ACCESS_TOKEN } from "./accesstoken";
  */
 export const HEADER_ENCRYPTED_DATA: string = 'RS-Encrypted-Data';
 export const ENCRYPTION_SECRET: string = 'RS Default Secret Text.';
-export const ENCRYPTION_ALGORITHM: string = 'aes-256-cbc';
+export const ENCRYPTION_ALGORITHM: string = 'aes-192-cbc';
 
 function encryptData(plaintext: string, secret: string = ENCRYPTION_SECRET) : string {
     let key = crypto.scryptSync(secret, 'salt', 24);
@@ -68,7 +68,7 @@ export default async function DataEncryption(req: express.Request, res: express.
             return;
         } 
 
-        let encryptedData = encryptData(plaintext, req.body?.secret);
+        let encryptedData = encryptData(plaintext, req.body?.secret || ENCRYPTION_SECRET);
         res.set(HEADER_ENCRYPTED_DATA, encryptedData);
 
         if(req.body?.password != null && req.body?.useremail != null) {
