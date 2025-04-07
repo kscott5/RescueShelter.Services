@@ -42,6 +42,6 @@
     "redis": "docker run -it -p 6379:6379 --rm --name redis_dev redis --loglevel debug",
     "dataset": "python ./datalake/src/rescueshelter/sample.data.py",
     "start": "node ./index.js",
-    "debug": "npm run esbuild && node --inspect ./index.js"
+    "debug": "node --inspect ./index.js"
   }
 }
