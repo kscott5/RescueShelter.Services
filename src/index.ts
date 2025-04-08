@@ -14,4 +14,4 @@ let staticPath = path.join(__dirname, '/../public');
 CoreServer.start('Rescue Shelter Services Server', 3302, [
     new SecurityService().publishWebAPI, // Secure all routes
     new SponsorService().publishWebAPI,
-    new AnimalService().publishWebAPI], [], staticPath);
+    new AnimalService().publishWebAPI], [/* cors */], staticPath);
