@@ -4,6 +4,7 @@
   "main": "index.js",
   "author": "Karega K. Scott",
   "license": "LGPL-3.0-or-later",
+  "bundleDependencies": true,
   "dependencies": {
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
@@ -16,7 +17,6 @@
     "rescueshelter.core": "^1.0.10"
   },
   "devDependencies": {
-    "@types/blake2": "^4.0.4",
     "@types/body-parser": "^1.19.0",
     "@types/cors": "^2.8.6",
     "@types/express": "^4.17.7",
@@ -35,12 +35,17 @@
   ],
   "scripts": {
     "clean": "rm -r -f ./dist",
-    "compile": "npm run clean & tsc -p tsconfig.json",
-    "esbuild": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21",
-    "watch": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21 --watch",
+
+    "compile": "npx tsc -p tsconfig.json",
+    "esbuild": "npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21",
+    "watch": "npx tsc -p -tsconfig.json --watch",
+    "pack": "npm pack --pack-destination .",
+    
+
     "mongo": "docker run -p 27017:27017 --rm --name mongo_dev mongo mongod",
+    "data":  "python ./datalake/src/rescueshelter/sample.data.py",
     "redis": "docker run -it -p 6379:6379 --rm --name redis_dev redis --loglevel debug",
-    "dataset": "python ./datalake/src/rescueshelter/sample.data.py",
+    
     "start": "node ./index.js",
     "debug": "node --inspect ./index.js"
   }
