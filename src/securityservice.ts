@@ -237,8 +237,8 @@ export class SecurityService {
             const jsonResponse = new CoreServices.JsonResponse();
 
             var token = req.body?.token;
-            var useremail = ''+req.body?.useremail;
-            var remoteIpAddr = ''+req.socket?.remoteAddress;
+            var useremail = req.body?.useremail;
+            var remoteIpAddr = req.socket?.remoteAddress;
 
             let client = redis.createClient({});
             client.on('error', (error) => {
