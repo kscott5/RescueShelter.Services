@@ -6,7 +6,6 @@ import {CoreServices} from "rescueshelter.core";
 import * as Middleware from "./middleware";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
-let cacheClient = redis.createClient({});
 
 console.log('\n**************These projects are professional entertainment***************')
 console.log('The following command configures an out of process Redis.io memory cache.');
@@ -19,23 +18,6 @@ console.log('set \'foo\' \'bar\''); // server response is +OK
 console.log('get \'foo\''); // server response is $4 bar
 console.log('quit'); //exit telnet sessions
 console.log('****************************************************************************\n');
-
-
-(async () => {
-    console.debug(`cacheAllUserEmails -> Cache All User Emails with DSN Key`);
-
-    try {
-        var model = CoreServices.getModel(CoreServices.SPONORS_MODEL_NAME);
-        var data = await model.find({}, {'useremail': 1});
-
-        if(data.length > 0) {
-            cacheClient.set('UserEmailByDNS', JSON.stringify(data));
-            cacheClient.expire('UserEmailByDNS', Middleware.AccessToken.EXPIRATION);
-        }
-    } catch(error)  {
-        console.debug(`cacheAllUserEmails error: ${error}`);
-    }
-})();
 
 class Track {
     private model;
@@ -159,15 +141,15 @@ export class SecurityDb {
     // https://jsfiddle.net/karegascott/wyjgsfne/
     verifyAdhocData(access: any) : Promise<any> {
         try {
-            var accessType = access.accessType.trim().toLowerCase() || "not required";
+            var accessType = access.accessType.trim().toLowerCase() || 'not required';
             switch(accessType) {
-                case "not required"  || 0:
+                case 'not required':
                     return Promise.resolve(true);
 
-                case "useremail" || 2:
+                case 'useremail':
                     return this.verifyUniqueUserEmail(access.useremail);
                 
-                case "username" || 3:
+                case 'username':
                     return this.verifyUniqueUserName(access.username);
                 
                 default:
@@ -250,20 +232,29 @@ export class SecurityService {
         });
 
         router.post("/deauth", async (req,res) => {
-            try {
-                var access_token = req.body?.access_token;
-                var useremail = req.body?.useremail;
-                var remoteIpAddr = req.socket?.remoteAddress;
+            res.status(200);
 
-                cacheClient.get(access_token) === true;
-                cacheClient.del(access_token) === true;                
-            } catch(error) {
-                console.debug(error);
-            }
+            const jsonResponse = new CoreServices.JsonResponse();
 
-            res.location("/");
-            res.redirect("/");
-        });
+            var token = req.body?.token;
+            var useremail = ''+req.body?.useremail;
+            var remoteIpAddr = ''+req.socket?.remoteAddress;
+
+            let client = redis.createClient({});
+            client.on('error', (error) => {
+            });
+
+            client.get(token,(error,reply) => {
+                if(!error) {
+                    let data = JSON.parse(reply);
+                    if(data?.useremail == useremail && data?.remoteIpAddr == remoteIpAddr) {
+                        client.del(token);
+                    }
+                }
+
+                res.json(jsonResponse.createData("component.loggout.bye.message"));
+            });
+        }); // end /deauth
 
         /**
          * Authenticate the sponsor and generate app access hash id
@@ -294,8 +285,11 @@ export class SecurityService {
                     scopes: 'Array of not available' // ex. sponsor.security.scopes
                 };
 
-                cacheClient.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
-                cacheClient.expire(accessToken, Middleware.AccessToken.EXPIRATION);
+                const client = new redis.RedisClient({});
+                client.on('error', (error)=>{});
+
+                client.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
+                client.expire(accessToken, Middleware.AccessToken.EXPIRATION);
 
                 res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
             } catch(error) {
