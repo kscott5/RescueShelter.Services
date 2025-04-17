@@ -38,11 +38,15 @@ export default async function AccessToken(req: express.Request, res: express.Res
         return;
     }
 
-    let cacheClient = redis.createClient({});
+    let client = redis.createClient({});
+    client.on('error', (error) => {
+        console.debug(`Access Token Middleware blocking, error: ${error}`);
+    });
+
     try { // Reading data from Redis in memory cache
-        let access_token = req.body?.access_token;
-        if(access_token == undefined) {
-            let error = `missing request.body: \'{access_token\': \'value\'}'`;
+        let token = req.body?.token;
+        if(token == undefined) {
+            let error = `missing request.body: \'{token\': \'value\'}'`;
             console.debug(`${title} ${req.originalUrl} ${error}`);
             res.status(200);
             res.json(jsonResponse.createError(error));
@@ -50,13 +54,13 @@ export default async function AccessToken(req: express.Request, res: express.Res
         }
 
         let remoteIpAddr = req.socket?.remoteAddress;
-        cacheClient.get(access_token, (error,reply) => {                    
+        client.get(token, (error,reply) => {                    
             if(reply !== null) {
-                console.debug(`${title} ${req.originalUrl} -> get \'${access_token}\' +OK`);
+                console.debug(`${title} ${req.originalUrl} -> get \'${token}\' +OK`);
                 res.status(200);
                 res.json(JSON.parse(reply));
             } else {
-                console.debug(`${title} ${req.originalUrl} -> get \'${access_token}\' ${(error || 'not available')}`);                      
+                console.debug(`${title} ${req.originalUrl} -> get \'${token}\' ${(error || 'not available')}`);                      
                 next();
             }
         });

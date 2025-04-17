@@ -236,24 +236,40 @@ export class SecurityService {
 
             const jsonResponse = new CoreServices.JsonResponse();
 
-            var token = req.body?.token;
-            var useremail = req.body?.useremail;
+            var token = req.body.token;
+            var useremail = req.body.useremail;
             var remoteIpAddr = req.socket?.remoteAddress;
 
             let client = redis.createClient({});
-            client.on('error', (error) => {
+
+            let cacheErrorWasFound = false;
+            client.on('error', (error) => { 
+                if(cacheErrorWasFound) return;
+
+                console.debug(`/death non-blocking, error: ${error}`);
+                cacheErrorWasFound = true;
             });
 
-            client.get(token,(error,reply) => {
-                if(!error) {
-                    let data = JSON.parse(reply);
-                    if(data?.useremail == useremail && data?.remoteIpAddr == remoteIpAddr) {
-                        client.del(token);
+            client.on('ready', ()=> {
+                client.get(token,(error,reply) => {
+                    if(cacheErrorWasFound) {
+                        console.debug(`/deauth redis client available now. process done!`);
                     }
-                }
 
-                res.json(jsonResponse.createData("component.loggout.bye.message"));
+                    if(error) {
+                        console.debug(`/deauth error: ${error}`);
+                    } else {
+                        let data = JSON.parse(reply);
+                        if(cacheErrorWasFound || data?.useremail == useremail && data?.remoteIpAddr == remoteIpAddr) {
+                            client.del(token);
+                        }
+                    }
+                    
+                });
             });
+
+            
+            res.json(jsonResponse.createData("component.loggout.bye.message"));
         }); // end /deauth
 
         /**

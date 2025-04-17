@@ -1,6 +1,7 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import * as bodyParser from "body-parser";
 import {CoreServices} from "rescueshelter.core";
+import * as Middleware from "./middleware";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -36,13 +37,13 @@ export class SponsorService {
     constructor(){}
 
     publishWebAPI(app: Application) : void {
-        let jsonBodyParser = bodyParser.json({type: 'application/json'});
-        let jsonResponse = new CoreServices.JsonResponse();
+        app.use(bodyParser.json({type: 'application/json'}));
+        
+        app.use(Middleware.AccessToken.default);
+        app.use(Middleware.DataEncryption.default);
 
-        let db = new SponsorDb();
-    
-        router.post("/", jsonBodyParser, async (req,res) => {            
-            console.debug(`POST: ${req.url}`);
+        router.post("/", async (req,res) => {            
+            let jsonResponse = new CoreServices.JsonResponse();
             if(!req.body) {
                 res.status(200);
                 res.json(jsonResponse.createError("HttpPOST json body not available"));
@@ -50,6 +51,7 @@ export class SponsorService {
 
            res.status(200);
            try {
+                const db = new SponsorDb();
                 var data = await db.newSponsor(req.body);
                 res.json(jsonResponse.createData(data));
            } catch(error) {
@@ -57,11 +59,11 @@ export class SponsorService {
            }            
         });
 
-        router.post("/:id", jsonBodyParser, async (req,res) => {
-            console.debug(`POST [:id]: ${req.url}`);            
-            
+        router.post("/:id", async (req,res) => {                   
+            let jsonResponse = new CoreServices.JsonResponse();
             res.status(200);
             try {
+                const db = new SponsorDb();
                 var data = await db.saveSponsor(req.body);
                 res.json(jsonResponse.createData(data["value"]));
             } catch(error) {
