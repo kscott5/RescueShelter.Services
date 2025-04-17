@@ -1,8 +1,9 @@
-import {Application, NextFunction, Request, Response, Router}  from "express";
+import * as express  from "express";
 import * as bodyParser from "body-parser";
-import {CoreServices} from "rescueshelter.core";
+import * as CoreServices from "rescueshelter.core";
+import * as Middleware from "./middleware";
 
-let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class AnimalManagerDb {
     private __selectionFields;
@@ -35,22 +36,23 @@ export class AnimalService {
     /**
      * @description Publishes the available Web API URLs for items
      */
-    publishWebAPI(app: Application) : void {
+    publishWebAPI(app: express.Application) : void {
         // Parser for various different custom JSON types as JSON
-        let jsonBodyParser = bodyParser.json({type: 'application/json'});
-        let jsonResponse = new CoreServices.JsonResponse();            
+        app.use(bodyParser.json({type: 'application/json'}));
+                
+        app.use(Middleware.AccessToken.default);
+        app.use(Middleware.DataEncryption.default);
 
-        let db = new AnimalManagerDb();
-        
-        router.post("/new", jsonBodyParser, async (req,res) => {
-            console.debug(`POST: ${req.url}`);
-
+        router.post("/new", async (req,res) => {
             var hashid = req.body.hashid;
             var useremail = req.body.useremail;
             var animal = req.body.animal;
             
             res.status(200);
 
+            let jsonResponse = new CoreServices.JsonResponse();
+            let db = new AnimalManagerDb();
+        
             if(animal === null) {
                 res.json(jsonResponse.createError("HttpPOST request body not valid"));
             }
@@ -64,15 +66,16 @@ export class AnimalService {
             }
         }); // end routeNewAnimal
         
-        router.post("/:id", jsonBodyParser, async (req,res) => {
-            console.debug(`POST [:id] update ${req.url}`);
-
+        router.post("/:id", async (req,res) => {
             var id = req.params.id;
             var useremail = req.body.useremail;
             var animal = req.body.animal;
             
             res.status(200);
 
+            let jsonResponse = new CoreServices.JsonResponse();
+            let db = new AnimalManagerDb();
+        
             if(id === null || animal === null || animal._id != id) {
                 res.json(jsonResponse.createError("HttpPOST request parameter and/or json body not valid"));
             }

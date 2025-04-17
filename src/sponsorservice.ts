@@ -1,9 +1,9 @@
-import {Application, NextFunction, Request, Response, Router} from "express";
+import * as express from "express";
 import * as bodyParser from "body-parser";
-import {CoreServices} from "rescueshelter.core";
+import * as CoreServices from "rescueshelter.core";
 import * as Middleware from "./middleware";
 
-let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class SponsorDb {
     private __selectionFields;
@@ -36,7 +36,7 @@ class SponsorDb {
 export class SponsorService {
     constructor(){}
 
-    publishWebAPI(app: Application) : void {
+    publishWebAPI(app: express.Application) : void {
         app.use(bodyParser.json({type: 'application/json'}));
         
         app.use(Middleware.AccessToken.default);

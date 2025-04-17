@@ -278,43 +278,51 @@ export class SecurityService {
         router.post("/auth", async (req,res) => {
             res.status(200);
 
-            const useremail = req.body?.useremail; // either useremail or username
-            const password = req.body?.password; // clear text password never saved
+            const client = new redis.RedisClient({});
+            let cacheErrorWasFound = false;
+            client.on('error', (error) => {
+                if(cacheErrorWasFound) return;
 
-            if(useremail == null || password == null) {
-                res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
-                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
-                res.json(jsonResponse.createError("request body not available"));
-                return;
-            }
+                cacheErrorWasFound = true;
+                console.debug(`/auth cache service blocking, error: ${error}`);
+            });
 
-            try {                
-                const encryptedPassword = res.getHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA)+'';
-                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
-                
-                var sponsor = await db.authenticate(useremail, encryptedPassword);
-                
-                const accessToken = res.getHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN)+'';
-                const accessData = { 
-                    useremail: useremail, 
-                    remoteIpAddress: req.socket?.remoteAddress, 
-                    scopes: 'Array of not available' // ex. sponsor.security.scopes
+            client.on('ready', async () => {
+                const useremail = req.body?.useremail; // either useremail or username
+                const password = req.body?.password; // clear text password never saved
+
+                if(useremail == null || password == null) {
+                    res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
+                    res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                    res.json(jsonResponse.createError("request body not available"));
+                    return;
+                }
+
+                try {                
+                    const encryptedPassword = res.getHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA)+'';
+                    res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                    
+                    var sponsor = await db.authenticate(useremail, encryptedPassword);
+                    
+                    const accessToken = res.getHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN)+'';
+                    const accessData = { 
+                        useremail: useremail, 
+                        remoteIpAddress: req.socket?.remoteAddress, 
+                        scopes: 'Array of not available' // ex. sponsor.security.scopes
+                    };
+
+                    client.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
+                    client.expire(accessToken, Middleware.AccessToken.EXPIRATION);
+
+                    res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
+                } catch(error) {
+                    res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
+                    res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                    
+                    res.json(jsonResponse.createError(error));
                 };
-
-                const client = new redis.RedisClient({});
-                client.on('error', (error)=>{});
-
-                client.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
-                client.expire(accessToken, Middleware.AccessToken.EXPIRATION);
-
-                res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
-            } catch(error) {
-                res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
-                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
-                
-                res.json(jsonResponse.createError(error));
-            };
-        });
+            }); // end client.on('ready'...)
+        }); // end /auth
 
         /**
          * Registers then authenticate new sponsor
