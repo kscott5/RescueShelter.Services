@@ -4,7 +4,16 @@
   "main": "index.js",
   "author": "Karega K. Scott",
   "license": "LGPL-3.0-or-later",
-  "bundleDependencies": true,
+  "bundleDependencies": [
+    "body-parser",
+    "cors",
+    "express",
+    "mongodb",
+    "mongoose",
+    "morgan",
+    "path",
+    "redis"
+  ],
   "dependencies": {
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
@@ -14,7 +23,7 @@
     "morgan": "^1.10.0",
     "path": "^0.12.7",
     "redis": "^3.0.2",
-    "rescueshelter.core": "^1.0.10"
+    "rescueshelter.core": "^2.0.2"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.0",
@@ -42,6 +51,6 @@
     "redis": "docker run -it -p 127.0.0.1:6379:6379 --rm --detach --name redis_dev redis --loglevel debug",
     "dataset": "python ./datalake/src/rescueshelter/sample.data.py",
     "start": "NODE_ENV='production' node ./index.js",
-    "debug": "NODE_ENV='development' NODE_ENV_LOG_LEVEL='debug' NODE_ENV_LOG_DIR='./dist/logs' node --inspect ./index.js"
+    "debug": "NODE_ENV='development' NODE_ENV_LOG_LEVEL='debug' NODE_ENV_LOG_DIR='./dist/logs' node --inspect=127.0.0.1:9231 ./index.js"
   }
 }
