@@ -240,20 +240,21 @@ export class SecurityService {
             var useremail = req.body.useremail;
             var remoteIpAddr = req.socket?.remoteAddress;
 
-            let client = redis.createClient({});
+            // @ts-ignore
+            let client = redis.createClient({ disableOfflineQueue: true});
 
             let cacheErrorWasFound = false;
             client.on('error', (error) => { 
                 if(cacheErrorWasFound) return;
 
-                console.debug(`/death non-blocking, error: ${error}`);
+                console.debug(`/death cache service blocking, error: ${error}`);
                 cacheErrorWasFound = true;
             });
 
             client.on('ready', ()=> {
                 client.get(token,(error,reply) => {
                     if(cacheErrorWasFound) {
-                        console.debug(`/deauth redis client available now. process done!`);
+                        console.debug(`/deauth cache service available now!`);
                     }
 
                     if(error) {
@@ -264,12 +265,12 @@ export class SecurityService {
                             client.del(token);
                         }
                     }
-                    
-                });
-            });
 
-            
-            res.json(jsonResponse.createData("component.loggout.bye.message"));
+                    res.json(jsonResponse.createData("component.loggout.bye.message"));
+                }); // end client.get(...)
+                
+                client.quit();
+            }); // end client.on(`ready`...)            
         }); // end /deauth
 
         /**
@@ -278,7 +279,11 @@ export class SecurityService {
         router.post("/auth", async (req,res) => {
             res.status(200);
 
-            const client = new redis.RedisClient({});
+            // NOTE: https://github.com/redis/node-redis/blob/4d659f0b446d19b409f53eafbf7317f5fbb917a9/docs/client-configuration.md
+
+            // @ts-ignore
+            const client = new redis.RedisClient({ disableOfflineQueue: true});
+
             let cacheErrorWasFound = false;
             client.on('error', (error) => {
                 if(cacheErrorWasFound) return;
@@ -288,6 +293,9 @@ export class SecurityService {
             });
 
             client.on('ready', async () => {
+                if(cacheErrorWasFound)
+                    console.debug(`/auth cache service available now`);
+
                 const useremail = req.body?.useremail; // either useremail or username
                 const password = req.body?.password; // clear text password never saved
 
@@ -321,6 +329,8 @@ export class SecurityService {
                     
                     res.json(jsonResponse.createError(error));
                 };
+
+                client.quit();
             }); // end client.on('ready'...)
         }); // end /auth
 
