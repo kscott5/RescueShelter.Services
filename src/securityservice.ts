@@ -7,18 +7,6 @@ import * as Middleware from "./middleware";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
-console.log('\n**************These projects are professional entertainment***************')
-console.log('The following command configures an out of process Redis.io memory cache.');
-console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
-console.log('');
-console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
-console.log('');
-console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
-console.log('set \'foo\' \'bar\''); // server response is +OK
-console.log('get \'foo\''); // server response is $4 bar
-console.log('quit'); //exit telnet sessions
-console.log('****************************************************************************\n');
-
 class Track {
     private model;
     constructor() {
