@@ -3,19 +3,29 @@ import * as bodyParser from "body-parser";
 import * as CoreServices from "rescueshelter.core";
 import * as Middleware from "./middleware";
 
+import {Connection, Model} from "mongoose";
+
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class SponsorDb {
-    private __selectionFields;
-    private model;
+    private selectionFields;
+    private connection: Connection;
+    private model: Model<CoreServices.sponsorSchema>;
 
     constructor() {
-        this.__selectionFields =  "_id useremail username firstname lastname photo audit";
-        this.model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+        this.selectionFields =  "_id useremail username firstname lastname photo audit";
+        this.connection = CoreServices.createConnection();
+        this.model = this.connection.model(CoreServices.SPONSOR_MODEL_NAME, CoreServices.sponsorSchema);
+    }
+
+    async close() {
+        await this.connection.close();
     }
 
     async newSponsor(item: any) : Promise<any> {
-        var sponsor = new this.model(item);
+        var sponsor = new this.model({ ...item,
+                security: {...item.security}
+        });
 
         var data = await sponsor.save();
         return data;
@@ -53,6 +63,8 @@ export class SponsorService {
            try {
                 const db = new SponsorDb();
                 var data = await db.newSponsor(req.body);
+                await db.close();
+
                 res.json(jsonResponse.createData(data));
            } catch(error) {
                res.json(jsonResponse.createError(error));
@@ -65,6 +77,8 @@ export class SponsorService {
             try {
                 const db = new SponsorDb();
                 var data = await db.saveSponsor(req.body);
+                await db.close();
+
                 res.json(jsonResponse.createData(data["value"]));
             } catch(error) {
                 res.json(jsonResponse.createError(error));

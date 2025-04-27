@@ -2,27 +2,34 @@ import * as express  from "express";
 import * as bodyParser from "body-parser";
 import * as CoreServices from "rescueshelter.core";
 import * as Middleware from "./middleware";
+import {Connection, Model} from "mongoose";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class AnimalManagerDb {
-    private __selectionFields;
-    private model;
+    private selectionFields;
+    private connection: Connection;
+    private model: Model<CoreServices.animalSchema>;
 
     constructor() {
-        this.__selectionFields = '_id name description imageSrc sponsors';
-        this.model = CoreServices.getModel(CoreServices.ANIMAL_MODEL_NAME);
+        this.selectionFields = '_id name description imageSrc sponsors';
+        this.connection = CoreServices.createConnection();
+        this.model = this.connection.model(CoreServices.ANIMAL_MODEL_NAME, CoreServices.animalSchema);
     } // end constructor
 
+    async close() {
+        await this.connection.close();
+    }
+
     async newAnimal(item: any) : Promise<any> {
-        var animal = new this.model(item);
+        var animal = new this.model({...item, sponsors: [...item?.sponsors] });
             
         var data = await animal.save();
         return data;
     }
 
     async saveAnimal(item: any) : Promise<any> {
-        var animal = new this.model(item);
+        var animal = new this.model({...item});
 
         var options = CoreServices.createFindOneAndUpdateOptions();
         var data = await this.model.findOneAndUpdate({_id: animal._id}, animal, options)
@@ -59,6 +66,7 @@ export class AnimalService {
 
             try {
                 var data = await db.newAnimal(req.body);
+                await db.close();
                 res.json(jsonResponse.createData(data));
             } catch(error) { 
                 console.log(error);
@@ -82,6 +90,8 @@ export class AnimalService {
             
             try {
                 var data = await db.saveAnimal(animal);
+                await db.close();
+
                 res.json(jsonResponse.createData(data));
             } catch(error) {
                 console.log(error);

@@ -4,36 +4,11 @@ import * as crypto from "crypto";
 import * as redis from "redis";
 import {CoreServices} from "rescueshelter.core";
 import * as Middleware from "./middleware";
+import {Connection, Model} from "mongoose";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
-class Track {
-    private model;
-    constructor() {
-        this.model = CoreServices.getModel(CoreServices.TRACK_MODEL_NAME);
-    }
-
-    request(action: any) {
-        console.debug("Tracking transaction");
-
-        var obj = new this.model(action);
-        
-        obj.save((err, doc)=>{
-            if(err !== null) {                
-                console.log("Error occurred with transaction tracker");
-                console.log(err);
-                throw new Error(err);
-            }
-        });
-    } // end request
-} // end Track
-
 class Generate {
-    private model;
-    constructor(){
-        this.model = CoreServices.getModel(CoreServices.SECURITY_MODEL_NAME);
-    }
-
     security(useremail: String, textPassword: String, questions?: any) {
         const encryptedPassword = this.encryptedData(textPassword, useremail);
         const securityModel = {password: encryptedPassword};
@@ -74,21 +49,22 @@ class Generate {
 } // end Generate
 
 export class SecurityDb {
-    private __authSelectionFields;
-    private model;
+    private authSelectionFields;
+    private connection: Connection;
+    private model: Model<CoreServices.tokenSchema>;
     
     constructor() {
-        this.__authSelectionFields = "_id useremail username firstname lastname photo audit";    
-
-        this.model = CoreServices.getModel(CoreServices.SECURITY_MODEL_NAME);
+        this.authSelectionFields = "_id useremail username firstname lastname photo audit";    
+        this.connection = CoreServices.createConnection();
+        this.model = this.connection.model(CoreServices.TOKENS_MODEL_NAME, CoreServices.tokenSchema);
     } // end constructor
 
     deauthenticate(access_token: String, useremail: String) : Promise<any> { 
-        return this.model.findOneAndRemove({access_token: access_token, useremail: useremail});
+        return this.model.findOneAndDelete({access_token: access_token, useremail: useremail});
     } 
 
     authenticate(useremail: String, encryptedPassword: String) : Promise<any> {
-        const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+        const sponsor = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
         return sponsor.aggregate([
             {
                 $match: { $and: [{useremail: useremail, "security.password": encryptedPassword}] }
@@ -153,7 +129,7 @@ export class SecurityDb {
     } // end verifyAccess
 
     private verifyUniqueUserName(name: String) : Promise<any> {
-        const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+        const sponsor = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
 
         return sponsor.findOne({useremail: name})
             .then(doc => { 
@@ -164,7 +140,8 @@ export class SecurityDb {
     }
 
     private verifyUniqueUserEmail(email: String) : Promise<any> {
-        const sponsor = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+        const sponsor = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
+        
         return sponsor.findOne({useremail: email})
             .then(doc =>  {
                 return (doc === null)? 
