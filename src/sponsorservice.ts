@@ -23,16 +23,23 @@ class SponsorDb {
     }
 
     async newSponsor(item: any) : Promise<any> {
-        var sponsor = new this.model({ ...item,
-                security: {...item.security}
-        });
+        var sponsor = new this.model({
+            'useremail': item.useremail, 'username': item.username,
+            'firstname': item.firstname, 'lastname': item.lastname
+         });
+        
+         sponsor["audit"].push({modified: new Date(), sponsor_id: sponsor._id});
 
         var data = await sponsor.save();
         return data;
     }
 
     async saveSponsor(item: any) : Promise<any>  {
-        var sponsor = new this.model(item);
+        var sponsor = new this.model({
+            '_id': item._id,
+            'useremail': item.useremail, 'username': item.username,
+            'firstname': item.firstname, 'lastname': item.lastname
+         });
         
         sponsor["audit"].push({modified: new Date(), sponsor_id: sponsor._id});
 
