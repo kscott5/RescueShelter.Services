@@ -1,3 +1,4 @@
+import base64url from "base64url";
 import * as express from "express";
 import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
@@ -9,8 +10,8 @@ import {Connection, Model} from "mongoose";
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class Generate {
-    security(useremail: String, textPassword: String, questions?: any) {
-        const encryptedPassword = this.encryptedData(textPassword, useremail);
+   static security(useremail: String, textPassword: String, questions?: any) {
+        const encryptedPassword = Generate.encryptedData(textPassword, useremail);
         const securityModel = {password: encryptedPassword};
 
         var secureQuestions = new Array();
@@ -21,7 +22,7 @@ class Generate {
                 if(questions[index]["question"] !== undefined && questions[index]["answer"] !== undefined) {
                     const question = {
                             question: questions[index]["question"], 
-                            answer: this.encryptedData(questions[index]["answer"])
+                            answer: Generate.encryptedData(questions[index]["answer"])
                     };
     
                     secureQuestions.push(question);
@@ -35,7 +36,7 @@ class Generate {
         return securityModel;
     }
 
-    encryptedData(data: String, secret: String = 'Rescue Shelter: Security Question Answer', algorithm: string = 'aes-192-cbc') {        
+    static encryptedData(data: String, secret: String = 'Rescue Shelter: Security Question Answer', algorithm: string = 'aes-192-cbc') {        
         let key = crypto.scryptSync(secret as string, 'salt', 24);
         let iv = crypto.randomFillSync(new Uint8Array(16));
 
@@ -51,21 +52,47 @@ class Generate {
 export class SecurityDb {
     private authSelectionFields;
     private connection: Connection;
-    private model: Model<CoreServices.tokenSchema>;
-    
+
     constructor() {
         this.authSelectionFields = "_id useremail username firstname lastname photo audit";    
-        this.connection = CoreServices.createConnection();
-        this.model = this.connection.model(CoreServices.TOKENS_MODEL_NAME, CoreServices.tokenSchema);
+        this.connection = CoreServices.createConnection();        
     } // end constructor
 
-    deauthenticate(access_token: String, useremail: String) : Promise<any> { 
-        return this.model.findOneAndDelete({access_token: access_token, useremail: useremail});
-    } 
-
     authenticate(useremail: String, encryptedPassword: String) : Promise<any> {
-        const sponsor = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
-        return sponsor.aggregate([
+        const security = this.connection.model(CoreServices.SECURITY_MODEL_NAME, CoreServices.securityModel);
+
+        const pipeline = [];
+        pipeline.push({
+            $match: {useremail: useremail}
+        });
+
+        pipeline.push({
+            $lookup: {
+                from: "security",
+                let: {'password': '$password'},
+                pipeline: [{
+                    $project: {
+                        _id: false, useremail: 1, username: 1, 
+                        is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
+                    }            
+                }],
+                as: "sponsors"
+            }        
+        });
+        pipeline.push({
+            $lookup: {
+                from: "sponsors",
+                let: {usermail: '$useremail', username: '$username', firstname: '$firstname', lastname: '$lastname'},
+                pipeline: [{
+                    $project: {
+                        _id: false, useremail: 1, username: 1, 
+                        is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
+                    }            
+                }],
+                as: "sponsor"
+            }        
+        });
+        return security.aggregate([
             {
                 $match: { $and: [{useremail: useremail, "security.password": encryptedPassword}] }
             },
@@ -79,19 +106,21 @@ export class SecurityDb {
             if(doc.length === 0)
                 return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
             
-            var sponsor = doc[0];
-            return Promise.resolve(sponsor);
+            return Promise.resolve(doc);
         });        
     } // end authenticate
 
-    newSponorSecurity(useremail: String, securityModel: any) : Promise<any> {
-        if(!securityModel["password"]) {
-            console.debug(`${securityModel}: not a valid security schema`);
-            return Promise.reject("Sponsor security creation issue. Contact system administrator");
-        }
+    async registeration(item: any) : Promise<any> {
+        if(await this.verifyUniqueUserEmail(item.useremail) === true ) {
+            item.security = Generate.security(item.useremail, item.password, item.questions);
 
-        const options = CoreServices.createFindOneAndUpdateOptions();
-        return this.model.findOneAndUpdate({useremail: useremail}, {$set: {security: securityModel}}, options);
+            var model = this.connection.model(CoreServices.SPONSOR_MODEL_NAME, CoreServices.sponsorSchema);
+        
+            var sponsor = new model({'useremail': item.useremail});
+        
+            await sponsor.save();
+            
+        }
     }
 
     /**
@@ -160,7 +189,7 @@ export class SecurityService {
         let db = new SecurityDb();
         let generate = new Generate();
 
-        app.use(bodyParser.json({type: "application/json"}));
+
         app.use(Middleware.AccessToken.default);
         app.use(Middleware.DataEncryption.default);
 
@@ -317,7 +346,7 @@ export class SecurityService {
             try {
 
                 if(await db.verifyAdhocData({accessType: 'useremail', useremail}) === true ) {
-                    item.security = generate.security(useremail, password, questions);
+                    item.security = Generate.security(useremail, password, questions);
 
                     var model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
                 
