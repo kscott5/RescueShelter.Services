@@ -5,9 +5,8 @@ import * as bodyParser from "body-parser";
 import {CoreServices} from "rescueshelter.core";
 import {Connection, Model} from "mongoose";
 
-import * as passport from "passport";
-import WebAuthnStrategy from 'passport-fido2-webauthn';
-import SessionChallengeStore from 'passport-fido2-webauthn';
+import passport from "passport";
+import * as webauthn from "passport-fido2-webauthn";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -43,8 +42,8 @@ function verification(externalId, userId, cb) {
 } // end verification
 
 
-const sessionStore = new SessionChallengeStore();
-const strategy = new WebAuthnStrategy({ store: sessionStore },
+const sessionStore = new webauthn.SessionChallengeStore({key: 'webauthn'});
+const strategy = new webauthn.Strategy({ store: sessionStore },
         verification, registeration);
 
 export class WebAuthnService {    
@@ -56,8 +55,6 @@ export class WebAuthnService {
         passport.use(strategy);
 
         app.use(bodyParser.json({type: "application/json"}));
-        app.use(passport.inititalize())
-        app.use(passport.session());
         
         router.post('/challenge', function(req, res, next) {            
             sessionStore.challenge(req, function(err, challenge) {
