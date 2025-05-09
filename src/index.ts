@@ -12,8 +12,18 @@ let staticPath = path.join(__dirname, '/../public');
 
 // https://expressjs.com/en/guide/writing-middleware.html
 // The order of middleware insertion is important.
-CoreServer.start('Rescue Shelter Services Server', 3302, [
-    new WebAuthnService().publishWebAPI, // passport
-    new SecurityService().publishWebAPI, // Secure all routes
-    new SponsorService().publishWebAPI,
-    new AnimalService().publishWebAPI], [/* cors */], staticPath);
+CoreServer.start({
+    server: {
+        name: 'Rescue Shelter Services Server', 
+        port: 3302,
+        secure: true
+    },
+    webRootPath: staticPath,
+    middleWare: [
+        new WebAuthnService().publishWebAPI, // passport
+        new SecurityService().publishWebAPI, // Secure all routes
+        new SponsorService().publishWebAPI,
+        new AnimalService().publishWebAPI], 
+    corHostNames: [/* cors */],
+    closeCallback: ()=>{}
+});
