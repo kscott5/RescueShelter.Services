@@ -4,6 +4,7 @@ import {AnimalService} from "./animalservice";
 import {SponsorService} from "./sponsorservice";
 import {SecurityService} from "./securityservice";
 import { WebAuthnService } from "./webauthnservice";
+import { OAuthCallbackService } from "./oauthcallbackservice";
 
 declare let __dirname; // variable initialize by NodeJS Path Module
 
@@ -20,10 +21,11 @@ CoreServer.start({
     },
     webRootPath: staticPath,
     middleWare: [
+        new OAuthCallbackService().publishWebAPI,
         new WebAuthnService().publishWebAPI, // passport
         new SecurityService().publishWebAPI, // Secure all routes
         new SponsorService().publishWebAPI,
         new AnimalService().publishWebAPI], 
-    corHostNames: [/* cors */],
+    corsHostNames: ['https://localhost:3000'],
     closeCallback: ()=>{}
 });
