@@ -1,10 +1,7 @@
-import base64url from "base64url";
 import * as express from "express";
-import * as bodyParser from "body-parser";
 import * as crypto from "crypto";
-import * as redis from "redis";
-import {CoreServices} from "rescueshelter.core";
 import * as Middleware from "./middleware";
+import {CoreServices} from "rescueshelter.core";
 import {Connection, Model} from "mongoose";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});

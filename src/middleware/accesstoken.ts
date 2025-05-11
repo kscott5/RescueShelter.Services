@@ -1,5 +1,5 @@
 import * as express from "express";
-import * as redis from "redis";
+import {createClient as createRedisClient} from "redis";
 import {CoreServices} from "rescueshelter.core";
 
 /**
@@ -38,7 +38,7 @@ export default async function AccessToken(req: express.Request, res: express.Res
         return;
     }
 
-    let client = redis.createClient({});
+    let client = createRedisClient({});
     client.on('error', (error) => {
         console.debug(`Access Token Middleware blocking, error: ${error}`);
     });
@@ -54,17 +54,16 @@ export default async function AccessToken(req: express.Request, res: express.Res
         }
 
         let remoteIpAddr = req.socket?.remoteAddress;
-        client.get(token, (error,reply) => {                    
-            if(reply !== null) {
-                console.debug(`${title} ${req.originalUrl} -> get \'${token}\' +OK`);
-                res.status(200);
-                res.json(JSON.parse(reply));
-            } else {
-                console.debug(`${title} ${req.originalUrl} -> get \'${token}\' ${(error || 'not available')}`);                      
-                next();
-            }
+        client.get(token).then((value) => {                    
+            console.debug(`${title} ${req.originalUrl} -> get \'${token}\' +OK`);
+            res.status(200);
+            res.json(JSON.parse(value+''));
+        }).catch((error) => {
+            console.debug(`${title} ${req.originalUrl} -> get \'${token}\' ${(error || 'not available')}`);                      
+            next();
         });
         
+        client.connect();
     } catch(error) { // Redis cache access  
         res.json(jsonResponse.createError(error));        
     } 

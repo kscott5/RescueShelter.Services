@@ -4,10 +4,10 @@
       "allowJs": false,
       "esModuleInterop": true,
       "forceConsistentCasingInFileNames": true,
-      "module": "Node16",
-      "moduleResolution": "node16",
-      "sourceMap": true,
-      "outDir": "dist"
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "sourceMap": false,
+      "outDir": "dist",
     },
     "include": [
       "src"
