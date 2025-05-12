@@ -8,14 +8,15 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "body-parser": "2.2.0",
+    "cors": "^2.8.5",
     "express": "5.1.0",
+    "google-auth-library": "9.15.1",
     "mongoose": "8.14.0",
+    "passport": "^0.7.0",
+    "passport-fido2-webauthn": "0.1.0",
     "redis": "5.0.1",
     "rescueshelter.core": "2.1.7",
-    "winston": "3.3.3",
-    "google-auth-library": "9.15.1",
-    "passport": "^0.7.0",
-    "passport-fido2-webauthn": "0.1.0"
+    "winston": "3.3.3"
   },
   "devDependencies": {
     "@types/body-parser": "1.19.5",

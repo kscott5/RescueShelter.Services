@@ -1,11 +1,13 @@
 import base64url from "base64url";
-import * as express from "express";
-import * as bodyParser from "body-parser";
+import express from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
 
 import {CoreServices} from "rescueshelter.core";
 import {Connection, Model} from "mongoose";
 
 import { OAuth2Client } from "google-auth-library";
+import { CORSOptions } from ".";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -15,8 +17,9 @@ export class OAuthCallbackService {
     publishWebAPI(app: express.Application) : void {
         let jsonResponse = new CoreServices.JsonResponse();
 
-        app.use(bodyParser.json({type: "application/json"}));
-        
+        router.use(bodyParser.json({type: "application/json"}));
+        router.use(cors(CORSOptions));
+                                                                                                                                                                                  
         router.post('/gs/verify', (req, res) => {
           const CLIENT_ID = '376504285036-7u3bjifr08917k18qr7euou8k1kpu6oo.apps.googleusercontent.com'
           const client = new OAuth2Client(CLIENT_ID);
@@ -34,7 +37,6 @@ export class OAuthCallbackService {
           
         });
         
-
         app.use('/api/oauth', router);
     } // end publishWebAPI
 } // end OAuthCallbackService

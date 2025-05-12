@@ -6,8 +6,8 @@ import {CoreServices} from "rescueshelter.core";
  * @description
  * The access token expires after five minutes
  */
-export const EXPIRATION = 60 /*seconds*/*5; // Five minutes
-export const HEADER_ACCESS_TOKEN = "Access-Token";
+const EXPIRATION = 60 /*seconds*/*5; // Five minutes
+const HEADER_ACCESS_TOKEN = "Access-Token";
 
 /**
  * @description
@@ -19,7 +19,7 @@ export const HEADER_ACCESS_TOKEN = "Access-Token";
  * @param next express.NextFunction
  * @returns  
  */
-export default async function AccessToken(req: express.Request, res: express.Response, next: express.NextFunction) {
+async function Middleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     const url =  /(\/api\/manage\/secure\/)(auth|data|deauth|registration)$/;
     const title = "Middleware Access Token";
     const jsonResponse = new CoreServices.JsonResponse();
@@ -67,4 +67,11 @@ export default async function AccessToken(req: express.Request, res: express.Res
     } catch(error) { // Redis cache access  
         res.json(jsonResponse.createError(error));        
     } 
-} // end AccessToken
+} // end Middleware
+
+export default {
+    Middleware,
+    EXPIRATION,
+    HEADER_ACCESS_TOKEN
+}
+

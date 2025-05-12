@@ -1,9 +1,13 @@
-import * as express from "express";
-import * as bodyParser from "body-parser";
-import * as CoreServices from "rescueshelter.core";
-import * as Middleware from "./middleware";
+import express from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
+
+import CoreServices from "rescueshelter.core";
+import accesstoken from "./middleware/accesstoken";
+import dataencryption from "./middleware/dataencryption";
 
 import {Connection, Model} from "mongoose";
+import { CORSOptions } from ".";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -54,10 +58,11 @@ export class SponsorService {
     constructor(){}
 
     publishWebAPI(app: express.Application) : void {
-        app.use(bodyParser.json({type: 'application/json'}));
+        router.use(bodyParser.json({type: 'application/json'}));
         
-        app.use(Middleware.AccessToken.default);
-        app.use(Middleware.DataEncryption.default);
+        router.use(cors(CORSOptions));
+        router.use(accesstoken.Middleware);
+        router.use(dataencryption.Middleware);
 
         router.post("/", async (req,res) => {            
             let jsonResponse = new CoreServices.JsonResponse();

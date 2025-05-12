@@ -1,7 +1,11 @@
-import * as express  from "express";
-import * as bodyParser from "body-parser";
-import * as CoreServices from "rescueshelter.core";
-import * as Middleware from "./middleware";
+import express  from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
+import CoreServices from "rescueshelter.core";
+
+import accesstoken from "./middleware/accesstoken";
+import dataencryption from "./middleware/dataencryption";
+
 import {Connection, Model} from "mongoose";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
@@ -47,8 +51,8 @@ export class AnimalService {
         // Parser for various different custom JSON types as JSON
         app.use(bodyParser.json({type: 'application/json'}));
                 
-        app.use(Middleware.AccessToken.default);
-        app.use(Middleware.DataEncryption.default);
+        app.use(accesstoken.Middleware);
+        app.use(dataencryption.Middleware);
 
         router.post("/new", async (req,res) => {
             var hashid = req.body.hashid;

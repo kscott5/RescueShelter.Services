@@ -1,8 +1,10 @@
-import * as express from "express";
-import * as crypto from "crypto";
-import * as Middleware from "./middleware";
+import express from "express";
+import crypto from "crypto";
 import {CoreServices} from "rescueshelter.core";
 import {Connection, Model} from "mongoose";
+
+import accesstoken from "./middleware/accesstoken";
+import dataencryption from "./middleware/dataencryption";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -187,8 +189,8 @@ export class SecurityService {
         let generate = new Generate();
 
 
-        app.use(Middleware.AccessToken.default);
-        app.use(Middleware.DataEncryption.default);
+        app.use(accesstoken.Middleware);
+        app.use(dataencryption.Middleware);
 
         router.post("/unique/sponsor", async (req,res) => {
             res.status(200);
@@ -214,7 +216,7 @@ export class SecurityService {
             const secret = req.body?.secret || '';
 
             if(data == null) {
-                res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                res.removeHeader(dataencryption.HEADER_ENCRYPTED_DATA);
                 res.json(jsonResponse.createError("HttpPOST: request body not available"));
                 return;
             }
@@ -291,19 +293,19 @@ export class SecurityService {
                 const password = req.body?.password; // clear text password never saved
 
                 if(useremail == null || password == null) {
-                    res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
-                    res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                    res.removeHeader(accesstoken.HEADER_ACCESS_TOKEN);
+                    res.removeHeader(dataencryption.HEADER_ENCRYPTED_DATA);
                     res.json(jsonResponse.createError("request body not available"));
                     return;
                 }
 
                 try {                
-                    const encryptedPassword = res.getHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA)+'';
-                    res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                    const encryptedPassword = res.getHeader(dataencryption.HEADER_ENCRYPTED_DATA)+'';
+                    res.removeHeader(dataencryption.HEADER_ENCRYPTED_DATA);
                     
                     var sponsor = await db.authenticate(useremail, encryptedPassword);
                     
-                    const accessToken = res.getHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN)+'';
+                    const accessToken = res.getHeader(accesstoken.HEADER_ACCESS_TOKEN)+'';
                     const accessData = { 
                         useremail: useremail, 
                         remoteIpAddress: req.socket?.remoteAddress, 
@@ -311,12 +313,12 @@ export class SecurityService {
                     };
 
                     client.set(`${accessToken}`, `${ JSON.stringify(accessData) }`);
-                    client.expire(accessToken, Middleware.AccessToken.EXPIRATION);
+                    client.expire(accessToken, accesstoken.EXPIRATION);
 
                     res.json(jsonResponse.createData({token: accessToken, sponsor: sponsor}));                
                 } catch(error) {
-                    res.removeHeader(Middleware.AccessToken.HEADER_ACCESS_TOKEN);
-                    res.removeHeader(Middleware.DataEncryption.HEADER_ENCRYPTED_DATA);
+                    res.removeHeader(accesstoken.HEADER_ACCESS_TOKEN);
+                    res.removeHeader(dataencryption.HEADER_ENCRYPTED_DATA);
                     
                     res.json(jsonResponse.createError(error));
                 };

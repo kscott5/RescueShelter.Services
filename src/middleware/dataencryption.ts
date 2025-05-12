@@ -1,15 +1,15 @@
 import * as crypto from "node:crypto";
 import * as express from "express";
 import {CoreServices} from "rescueshelter.core";
-import { HEADER_ACCESS_TOKEN } from "./accesstoken";
+import accesstoken from "./accesstoken";
 
 /**
  * @description
  * The data encryption, encrypted data response header
  */
-export const HEADER_ENCRYPTED_DATA: string = 'RS-Encrypted-Data';
-export const ENCRYPTION_SECRET: string = 'RS Default Secret Text.';
-export const ENCRYPTION_ALGORITHM: string = 'aes-192-cbc';
+const HEADER_ENCRYPTED_DATA: string = 'RS-Encrypted-Data';
+const ENCRYPTION_SECRET: string = 'RS Default Secret Text.';
+const ENCRYPTION_ALGORITHM: string = 'aes-192-cbc';
 
 function encryptData(plaintext: string, secret: string = ENCRYPTION_SECRET) : string {
     let key = crypto.scryptSync(secret, 'salt', 24);
@@ -41,7 +41,7 @@ function encryptData(plaintext: string, secret: string = ENCRYPTION_SECRET) : st
  * @param next express.NextFunction
  * @returns 
  */
-export default async function DataEncryption(req: express.Request, res: express.Response, next: express.NextFunction) {
+async function Middleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     console.log("Middleware Data Encryption");
     
     const jsonResponse = new CoreServices.JsonResponse();
@@ -73,12 +73,19 @@ export default async function DataEncryption(req: express.Request, res: express.
 
         if(req.body?.password != null && req.body?.useremail != null) {
             // create the access token
-            let accessToken = encryptData(`${req.socket?.remoteAddress}/${req.body.useremail}/${encryptedData}`);
-            res.set(HEADER_ACCESS_TOKEN, accessToken);
+            let accessToken = encryptData(`${req.socket?.remoteAddress}/${req.body.useremail}/${encryptedData}`);            
+            res.set(accesstoken.HEADER_ACCESS_TOKEN, accessToken);
         }
 
         next();
     } catch(error) { // Redis cache access 
         res.json(jsonResponse.createError(error));
     } // try-catch    
-} // end DataEncryption
+} // end Middleware
+
+export default {
+    Middleware,
+    HEADER_ENCRYPTED_DATA,
+    ENCRYPTION_SECRET,
+    ENCRYPTION_ALGORITHM
+}

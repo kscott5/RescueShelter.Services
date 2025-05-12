@@ -1,12 +1,15 @@
 import base64url from "base64url";
-import * as express from "express";
-import * as bodyParser from "body-parser";
+import express from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
 
 import {CoreServices} from "rescueshelter.core";
 import {Connection, Model} from "mongoose";
 
 import passport from "passport";
-import * as webauthn from "passport-fido2-webauthn";
+import webauthn from "passport-fido2-webauthn";
+import { CORSOptions } from ".";
+
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -54,7 +57,8 @@ export class WebAuthnService {
 
         passport.use(strategy);
 
-        app.use(bodyParser.json({type: "application/json"}));
+        router.use(bodyParser.json({type: "application/json"}));
+        router.use(cors(CORSOptions));
         
         router.post('/challenge', function(req, res, next) {            
             sessionStore.challenge(req, function(err, challenge) {

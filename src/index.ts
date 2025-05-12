@@ -8,8 +8,27 @@ import { OAuthCallbackService } from "./oauthcallbackservice";
 
 declare let __dirname; // variable initialize by NodeJS Path Module
 
-let path = require("path");
+let path = require("node:path");
 let staticPath = path.join(__dirname, '/../public');
+
+export const CORSHostNames = [
+    "https://localhost:3000"
+];
+
+export const CORSOptions = {
+    origin: (origin, callback) => {
+        callback(null, {
+            origin: CORSHostNames.includes(origin)
+        });
+    },
+    methods: ['GET','POST', 'PUT'],
+    allowHeaders: ['Content-Type'],
+    exposedHeaders: [], // none
+    credentials: false,
+    maxAge: 3000, // seconds
+    preFlightContinue: true,
+    optionSuccessStatus: 210
+}
 
 // https://expressjs.com/en/guide/writing-middleware.html
 // The order of middleware insertion is important.
@@ -25,7 +44,8 @@ CoreServer.start({
         new WebAuthnService().publishWebAPI, // passport
         new SecurityService().publishWebAPI, // Secure all routes
         new SponsorService().publishWebAPI,
-        new AnimalService().publishWebAPI], 
-    corsHostNames: ['https://localhost:3000'],
+        new AnimalService().publishWebAPI
+        ], 
+    corsHostNames: CORSHostNames,
     closeCallback: ()=>{}
 });
