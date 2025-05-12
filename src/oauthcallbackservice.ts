@@ -1,10 +1,9 @@
-import base64url from "base64url";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 
+// @ts-ignore
 import {CoreServices} from "rescueshelter.core";
-import {Connection, Model} from "mongoose";
 
 import { OAuth2Client } from "google-auth-library";
 import { CORSOptions } from ".";
@@ -24,8 +23,6 @@ export class OAuthCallbackService {
           const CLIENT_ID = '376504285036-7u3bjifr08917k18qr7euou8k1kpu6oo.apps.googleusercontent.com'
           const client = new OAuth2Client(CLIENT_ID);
           
-          var data = {};
-
           client.verifyIdToken({
             idToken: req.body.credential,
             audience: CLIENT_ID,

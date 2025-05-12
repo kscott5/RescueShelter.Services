@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 
+// @ts-ignore
 import CoreServices from "rescueshelter.core";
 import accesstoken from "./middleware/accesstoken";
 import dataencryption from "./middleware/dataencryption";
@@ -12,12 +13,10 @@ import { CORSOptions } from ".";
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class SponsorDb {
-    private selectionFields;
     private connection: Connection;
     private model: Model<CoreServices.sponsorSchema>;
 
     constructor() {
-        this.selectionFields =  "_id useremail username firstname lastname photo audit";
         this.connection = CoreServices.createConnection();
         this.model = this.connection.model(CoreServices.SPONSOR_MODEL_NAME, CoreServices.sponsorSchema);
     }

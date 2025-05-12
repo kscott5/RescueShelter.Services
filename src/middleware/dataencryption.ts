@@ -1,5 +1,7 @@
-import * as crypto from "node:crypto";
-import * as express from "express";
+import crypto from "node:crypto";
+import express from "express";
+
+// @ts-ignore
 import {CoreServices} from "rescueshelter.core";
 import accesstoken from "./accesstoken";
 

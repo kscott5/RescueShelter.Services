@@ -1,5 +1,7 @@
-import {Application, Router} from "express";
-import * as bodyParser from "body-parser";
+import express from "express";
+import bodyParser from "body-parser";
+
+// @ts-ignore
 import {CoreServices} from "rescueshelter.core";
 
 /**
@@ -13,7 +15,7 @@ import {CoreServices} from "rescueshelter.core";
  * 
  */
 
-let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 CoreServices.createMongooseModel("aria", 
     CoreServices.createMongooseSchema({
@@ -26,19 +28,17 @@ CoreServices.createMongooseModel("aria",
 export class AriaService {
     constructor(){}
 
-    publishWebAPI(app: Application) : void {
-        let jsonParser = bodyParser.json();
-        let jsonResponse = new CoreServices.JsonResponse();
+    publishWebAPI(app: express.Application) : void {
+        router.use(bodyParser.json({type: "application/json"}));
 
+        router.get("/:lang", (req: express.Request,res: express.Response) => {
+            let jsonResponse = new CoreServices.JsonResponse();
 
-        async function stub(req,res) {
             res.status(200);
 
-            const lang = req.params.lang;
-            res.json(jsonResponse.createError("Not implemented yet"));
-        }
+            res.json(jsonResponse.createError(`${req.body?.lang}: Not implemented yet`));
+        });
 
-        router.get("/:lang", jsonParser, stub);
         app.use('/api/aria', router);
     } // end publishWebAPI
 } // end AriaService

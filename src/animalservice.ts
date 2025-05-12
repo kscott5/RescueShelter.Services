@@ -1,6 +1,7 @@
 import express  from "express";
 import bodyParser from "body-parser";
-import cors from "cors";
+
+// @ts-ignore
 import CoreServices from "rescueshelter.core";
 
 import accesstoken from "./middleware/accesstoken";
@@ -11,12 +12,10 @@ import {Connection, Model} from "mongoose";
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class AnimalManagerDb {
-    private selectionFields;
     private connection: Connection;
     private model: Model<CoreServices.animalSchema>;
 
     constructor() {
-        this.selectionFields = '_id name description imageSrc sponsors';
         this.connection = CoreServices.createConnection();
         this.model = this.connection.model(CoreServices.ANIMAL_MODEL_NAME, CoreServices.animalSchema);
     } // end constructor
@@ -49,14 +48,12 @@ export class AnimalService {
      */
     publishWebAPI(app: express.Application) : void {
         // Parser for various different custom JSON types as JSON
-        app.use(bodyParser.json({type: 'application/json'}));
+        router.use(bodyParser.json({type: 'application/json'}));
                 
-        app.use(accesstoken.Middleware);
-        app.use(dataencryption.Middleware);
+        router.use(accesstoken.Middleware);
+        router.use(dataencryption.Middleware);
 
         router.post("/new", async (req,res) => {
-            var hashid = req.body.hashid;
-            var useremail = req.body.useremail;
             var animal = req.body.animal;
             
             res.status(200);
@@ -80,7 +77,6 @@ export class AnimalService {
         
         router.post("/:id", async (req,res) => {
             var id = req.params.id;
-            var useremail = req.body.useremail;
             var animal = req.body.animal;
             
             res.status(200);

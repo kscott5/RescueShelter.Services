@@ -1,5 +1,7 @@
 import * as express from "express";
 import {createClient as createRedisClient} from "redis";
+
+// @ts-ignore
 import {CoreServices} from "rescueshelter.core";
 
 /**
@@ -53,7 +55,6 @@ async function Middleware(req: express.Request, res: express.Response, next: exp
             return;                        
         }
 
-        let remoteIpAddr = req.socket?.remoteAddress;
         client.get(token).then((value) => {                    
             console.debug(`${title} ${req.originalUrl} -> get \'${token}\' +OK`);
             res.status(200);

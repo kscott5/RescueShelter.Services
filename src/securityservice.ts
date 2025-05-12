@@ -1,7 +1,9 @@
 import express from "express";
 import crypto from "crypto";
+
+// @ts-ignore
 import {CoreServices} from "rescueshelter.core";
-import {Connection, Model} from "mongoose";
+import {Connection} from "mongoose";
 
 import accesstoken from "./middleware/accesstoken";
 import dataencryption from "./middleware/dataencryption";
@@ -29,8 +31,10 @@ class Generate {
             } // end for loop
         } // end questions
         
-        if(secureQuestions.length > 0)
+        if(secureQuestions.length > 0) {
+            // @ts-ignore
             securityModel["questions"] = secureQuestions;
+        }
 
         return securityModel;
     }
@@ -49,11 +53,9 @@ class Generate {
 } // end Generate
 
 export class SecurityDb {
-    private authSelectionFields;
     private connection: Connection;
 
     constructor() {
-        this.authSelectionFields = "_id useremail username firstname lastname photo audit";    
         this.connection = CoreServices.createConnection();        
     } // end constructor
 
@@ -101,6 +103,7 @@ export class SecurityDb {
             }}
         ])
         .limit(1)
+        // @ts-ignore
         .then(doc => {
             if(doc.length === 0)
                 return Promise.reject(CoreServices.SYSTEM_INVALID_USER_CREDENTIALS_MSG);
@@ -160,6 +163,7 @@ export class SecurityDb {
         const sponsor = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
 
         return sponsor.findOne({useremail: name})
+            // @ts-ignore
             .then(doc => { 
                 return (doc === null)? 
                     Promise.resolve({unique: true}) :
@@ -171,6 +175,7 @@ export class SecurityDb {
         const sponsor = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
         
         return sponsor.findOne({useremail: email})
+        // @ts-ignore
             .then(doc =>  {
                 return (doc === null)? 
                     Promise.resolve({unique: true}) :
@@ -186,11 +191,9 @@ export class SecurityService {
         let jsonResponse = new CoreServices.JsonResponse();
         
         let db = new SecurityDb();
-        let generate = new Generate();
 
-
-        app.use(accesstoken.Middleware);
-        app.use(dataencryption.Middleware);
+        router.use(accesstoken.Middleware);
+        router.use(dataencryption.Middleware);
 
         router.post("/unique/sponsor", async (req,res) => {
             res.status(200);
@@ -213,8 +216,7 @@ export class SecurityService {
             res.status(200);
 
             const data = req.body?.data;
-            const secret = req.body?.secret || '';
-
+            
             if(data == null) {
                 res.removeHeader(dataencryption.HEADER_ENCRYPTED_DATA);
                 res.json(jsonResponse.createError("HttpPOST: request body not available"));
@@ -237,6 +239,7 @@ export class SecurityService {
             let client = redis.createClient({ disableOfflineQueue: true});
 
             let cacheErrorWasFound = false;
+            // @ts-ignore
             client.on('error', (error) => { 
                 if(cacheErrorWasFound) return;
 
@@ -245,6 +248,7 @@ export class SecurityService {
             });
 
             client.on('ready', ()=> {
+                // @ts-ignore
                 client.get(token,(error,reply) => {
                     if(cacheErrorWasFound) {
                         console.debug(`/deauth cache service available now!`);
@@ -278,6 +282,7 @@ export class SecurityService {
             const client = new redis.RedisClient({ disableOfflineQueue: true});
 
             let cacheErrorWasFound = false;
+            // @ts-ignore
             client.on('error', (error) => {
                 if(cacheErrorWasFound) return;
 
