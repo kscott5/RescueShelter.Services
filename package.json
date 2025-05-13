@@ -15,7 +15,7 @@
     "passport": "0.7.0",
     "passport-fido2-webauthn": "0.1.0",
     "redis": "5.0.1",
-    "rescueshelter.core": "2.1.7",
+    "rescueshelter.core": "^2.1.9",
     "winston": "3.3.3"
   },
   "devDependencies": {
