@@ -2,7 +2,7 @@ import express from "express";
 import crypto from "crypto";
 
 // @ts-ignore
-import {CoreServices} from "rescueshelter.core";
+import {services as CoreServices} from "rescueshelter.core";
 import {Connection} from "mongoose";
 
 import accesstoken from "./middleware/accesstoken";

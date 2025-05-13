@@ -2,7 +2,7 @@ import * as express from "express";
 import {createClient as createRedisClient} from "redis";
 
 // @ts-ignore
-import {CoreServices} from "rescueshelter.core";
+import {services as CoreServices} from "rescueshelter.core";
 
 /**
  * @description

@@ -1,5 +1,5 @@
 // @ts-ignore
-import {CoreServer} from "rescueshelter.core";
+import {server as CoreServer} from "rescueshelter.core";
 import {AnimalService} from "./animalservice";
 import {SponsorService} from "./sponsorservice";
 import {SecurityService} from "./securityservice";
@@ -12,14 +12,13 @@ declare let __dirname; // variable initialize by NodeJS Path Module
 let path = require("node:path");
 let staticPath = path.join(__dirname, '/../public');
 
-export const CORSHostNames = [
-    "https://localhost:3000"
-];
+export const CORSHostNames = []; // bad host requestors
 
 export const CORSOptions = {
     // @ts-ignore
     origin: (origin, callback) => {
         callback(null, {
+            // @ts-ignore
             origin: CORSHostNames.includes(origin)
         });
     },

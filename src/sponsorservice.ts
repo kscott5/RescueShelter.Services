@@ -3,7 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 
 // @ts-ignore
-import CoreServices from "rescueshelter.core";
+import {services as CoreServices} from "rescueshelter.core";
 import accesstoken from "./middleware/accesstoken";
 import dataencryption from "./middleware/dataencryption";
 

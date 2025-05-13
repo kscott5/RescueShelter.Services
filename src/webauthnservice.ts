@@ -4,7 +4,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 
 // @ts-ignore
-import {CoreServices} from "rescueshelter.core";
+import {services as CoreServices} from "rescueshelter.core";
 
 import passport from "passport";
 import webauthn from "passport-fido2-webauthn";
