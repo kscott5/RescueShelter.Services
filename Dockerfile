@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.url="https://githhub.com/kscott5/rescueshelter.se
 LABEL org.opencontainers.image.source="https://githhub.com/kscott5/rescueshelter.services"
 LABEL org.opencontainers.image.version="v2.0.1"
   
-EXPOSE 3303
+EXPOSE 3302
 
 RUN export RS_CONNETION_URI="mongodb+srv://cluster0.dol02bo.mongodb.net/?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&tlsCertificateKeyFile=/app/cert/production.perm&w=majority&appName=Cluster0&dbname=rescueshelter"
 
