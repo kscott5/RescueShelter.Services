@@ -42,7 +42,10 @@
     "watch": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21 --watch",
     "docker.mongo": "docker run -p 27017:27017 --rm --detach --name mongo_dev mongo mongod",
     "docker.redis": "docker run -it -p 127.0.0.1:6379:6379 --rm --detach --name redis_dev redis --loglevel debug",
+    "docker.rmi": "docker rmi rescueshelter/managers:latest",
+    "docker.network": "docker network create rescueshelter",
     "docker.build": "docker build -t rescueshelter/managers:latest --no-cache .",
+    "docker.managers": "docker run -d --rm --name managers --network rescueshelter -p 3302:3302 rescueshelter/managers:latest",
     "dataset": "python ./datalake/src/rescueshelter/sample.data.py",
     "start": "NODE_ENV='production' node ./index.js",
     "debug": "NODE_ENV='development' NODE_ENV_LOG_LEVEL='debug' NODE_ENV_LOG_DIR='./dist/logs' node --inspect=127.0.0.1:9231 ./index.js"
