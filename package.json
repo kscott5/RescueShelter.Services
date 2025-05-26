@@ -11,7 +11,7 @@
     "cors": "2.8.5",
     "express": "5.1.0",
     "google-auth-library": "9.15.1",
-    "mongoose": "8.14.0",
+    "mongoose": "8.14.1",
     "passport": "0.7.0",
     "passport-fido2-webauthn": "0.1.0",
     "redis": "5.0.1",
